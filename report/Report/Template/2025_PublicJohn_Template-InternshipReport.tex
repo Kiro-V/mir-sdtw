@@ -1,0 +1,308 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Setup title, etc in config.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{config}                     
+\documentclass[a4paper,11pt,\myPageLayout]{book}
+\usepackage[utf8]{inputenc}
+\usepackage{captionSmall}
+
+\input{config_packages_macros}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Start of document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\fancypagestyle{plain}{\pagestyle{mine}} % remove this if you don't want 
+                                         % headings on the first page of a chapter
+\frontmatter
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title Page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{titlepage}
+\cleardoublepage{}
+
+\pagenumbering{roman}
+\pagestyle{mine}
+\newpage
+
+\section*{Abstract}
+
+\mainmatter{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Table of Contents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setcounter{tocdepth}{1}
+\setcounter{page}{1}
+{\parskip=0mm \tableofcontents}
+% \thispagestyle{empty}
+
+\pagestyle{mine}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}
+\label{chapter:Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Generally speaking, the introduction chapter should introduce the 
+topic of the thesis and motivate the importance of it. Moreover, the
+introduction should give an outline of the thesis and point out the 
+contributions of this work.
+
+You can logically group the chapters of the thesis
+by using so-called parts. An example of how to insert a part-page 
+containing a teaser-image is included in this template.
+Typically, you will have an introductory chapter that gives a
+broad overview. Then, the first part of the thesis might start after 
+the introduction.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Report Organization}
+\label{section:thesisOrganization}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+You can setup some layout options and elementary data in \texttt{config.tex}:
+\begin{itemize}
+    \item the title of your thesis: \texttt{\textbackslash{} myTitle\{TITLE OF YOUR REPORT\}}
+    \item your name: \texttt{\textbackslash{} myName\{John Public\}}
+    \item your professor: \texttt{\textbackslash{} myProf\{Prof.\ Dr.\ Max Mustermann\}}
+    \item your supervisor: \texttt{\textbackslash{} mySupervisor\{Prof.\ Dr.\ Max Mustermann \}}    
+    \item your submission date: \texttt{\textbackslash{} myTime\{\textbackslash{} today\}}        
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Theoretic Foundations}
+\label{chapter:Foundations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Each chapter should start with a small summary discussing the content and the relation
+of the sections. In this chapter, we elaborate on the theoretical background, 
+foundations and concepts that are being used in the thesis. In particular, we 
+focus on latex construct that are typically used in thesis documents.
+\Section{section:mathEquations} illustrates the usage of math equations.
+Then, in \Section{section:citations}, some examples are given on how to cite literature.
+In \Section{section:tables}, $\ldots$
+
+When using labels, please avoid collisions in the label names.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Math Equations}
+\label{section:mathEquations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+You may want to display math equations in three distinct styles:
+inline, numbered or non-numbered display. These three styles are used in the
+following paragraph along with labeling, aligning and referencing equations.
+
+A little anecdote tells that Johann Carl Friedrich Gau{\ss}\index{Gau{\ss}}
+was able to compute the sum of numbers in the set
+$\{i \in \N\,|\,i \leq N\}$ in a very short amount of time at the age of nine.
+Apparently, he was able to observe that if $N$ is even, then
+the numbers in the sum can be reordered and grouped so that
+\begin{align}
+    \sum_{i=1}^N i &= 1 + 2 + \ldots + N \notag \\
+                   &= (1 + N) + (2 + N-1) + \ldots + (\frac{N}{2} + \frac{N}{2}+1) \label{eq:gaussSum}\\
+                   &= \frac{N\cdot (N+1)}{2}                                            \label{eq:gaussFormula}
+\end{align}
+If $N$ is even, then the reordering Equation $\eqref{eq:gaussSum}$ simply builds $N/2$ summands
+with value $N+1$, resulting to Equation $\eqref{eq:gaussFormula}$.
+This Equation also holds for odd $N$ and a similar argument holds in this case.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Citations}
+\label{section:citations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In a thesis one might want to cite interesting and relevant
+books~\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER,Mueller07_InformationRetrieval_SPRINGER,Habets07_SpeechDereverberation},
+scientific papers~\cite{HerreT11_AudioObjects_AES,EdlerD09_TimeWarpedDCT},
+or websites~\cite{Mutopia_website}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Tables}
+\label{section:tables}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Because tables cannot, (well, at least not easily) be split across pages, the best
+placement for them is typically the top of the page
+nearest their initial cite.  To
+ensure this proper ``floating'' placement of tables, use the
+environment \emph{table} to enclose the table's contents and
+the table caption.  The contents of the table itself must go
+in the \emph{tabular} environment, to
+be aligned properly in rows and columns, with the desired
+horizontal and vertical rules, as seen in \Table{table:characters}.
+
+\begin{table}[t]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}cll@{}} 
+\toprule
+Non-English or Math & Frequency & Comments\\ 
+\midrule
+\O & 1 in 1,000& For Swedish names\\
+$\pi$ & 1 in 5& Common in math\\
+\$ & 4 in 5 & Used in business\\
+$\Psi^2_1$ & 1 in 40,000& Unexplained usage\\
+\bottomrule
+\end{tabular}
+\vspace*{-0cm}
+\caption{Frequency of Special Characters. Note that this table does not contain any
+vertical lines which makes the table look more tidy.}
+\label{table:characters}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Figures}
+\label{section:figures}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Like tables, figures cannot be split across pages; the
+best placement for them
+is typically the top or the bottom of the page nearest
+their initial cite.  To ensure this proper ``floating'' placement
+of figures, use the environment
+\emph{figure} to enclose the figure and its caption.
+This sample thesis document contains examples of \emph{.pdf}
+files to be displayable with \LaTeX. 
+
+Typically, in addition to a \emph{figure} environment, we use
+use PowerPoint that allows us to easily align and position subfigures as well as labels, as done in \Figure{figure:signals}.
+By the way, the curves shown in \Figure{figure:signals} have been generated with
+\MATLAB{}. Please find the generating sample script in \texttt{figures/figures.m}.
+
+Including pixel graphics like in \Figure{figure:smiley} is also possible.
+As mentioned before, pixel graphics have to be converted to the allowed formats
+beforehand.
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=12cm]{figures/fig_sines.pdf}
+\vspace*{-0cm}
+\caption{Sine functions with different amplitudes $A$, frequencies $\omega$ and phases $\theta$ can be
+calculated as $f_{A, \omega, \theta}(t) = A \sin(2\pi (\omega t-\theta))$.}
+\label{figure:signals}
+\end{figure}
+
+
+%\begin{figure}[t]
+%\centering
+%\psset{xunit=1cm, yunit=1cm}
+%\begin{pspicture}(0,0)(5,2) % (coordinate system origin)(width and height in centimeters)
+%    \psgrid
+%\end{pspicture}
+%\caption{A simple grid sometimes helps to find the right coordinates in the figure.}
+%\label{figure:grid}
+%\end{figure}
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=4cm]{figures/Smiley.pdf}
+\vspace*{-0cm}
+\caption{Pixel graphics can also be included, but in low resolution it looks terrible and in high resolution is takes ages to load.}
+\label{figure:smiley}
+\end{figure}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Theorem-like Constructs}
+\label{section:constructs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Other common constructs that may occur in your thesis are
+the forms for logical constructs like theorems, axioms,
+corollaries and proofs. See the following example:
+
+\begin{Theorem}
+Let $f$ be continuous on $[a,b]$.  If $G$ is
+an antiderivative for $f$ on $[a,b]$, then
+\begin{align}
+  \int^{b}_{a}f(t)dt = G(b) - G(a).
+\end{align}
+\end{Theorem}
+
+The following is a definition:
+\begin{Definition}
+If $z$ is irrational, then by $e^z$ we mean the
+unique number which has logarithm $z$:
+\begin{align}
+  \log e^z = z.
+\end{align}
+\end{Definition}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Conclusions}
+\label{chapter:conclusions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Draw the conclusions in the big picture of the thesis! Then, indicate future work.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Source Code}
+\label{chapter:source_code}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this chapter, the headers of selected \MATLAB{} functions created during the writing of this thesis are reproduced. The headers contain information about the name of the described function and its input/output behavior.
+
+\section*{Feature Extraction}
+The \texttt{file\_to\_feature} function is used as a wrapper for several low-level functions that perform feature extraction or loading of precomputed features.
+
+Sample usage:\\
+\scriptsize
+\verb|[f_pitch, f_peaks] = file_to_feature('features', 'pathetique.wav');|
+
+\begin{verbatim}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Name: file_to_feature
+% Version: 1.0
+% Date: 11.05.2010
+% Programmer: John Q. Public
+%
+% Description:
+%   Load or compute features for audio and MIDI files
+%
+% Input:
+% - dirname: Directory where the file or features are located
+% - filename: Name of the file for which to load/compute features
+% - parameter
+%            .win_len: Window length used for STMSP feature generation
+%            .win_res: Window resolution
+%
+% Output:
+% - f_pitch: Pitch features (STMSP)
+% - f_peaks: Energy peaks for onset computation
+% - f_onsets: Precise onsets (only generated in case of MIDI input data)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{verbatim}
+\normalsize
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+{
+\small
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{siam}
+\bibliography{bibliography}
+}
+\cleardoublepage{}
+
+
+\end{document}
