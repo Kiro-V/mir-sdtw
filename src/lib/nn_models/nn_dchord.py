@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import nn_processing
+from lib.nn_models.nn_processing import log_compression, temporal_smoothing, feature_normalization, softmax_temperature
 
 class dchord_templates(torch.nn.Module):
     """Module for applying template-based chord recognition to chroma features.
@@ -69,18 +69,24 @@ class dchord_pipeline(torch.nn.Module):
     """
     
     def __init__(self, compression_params=None, temp_smooth_params=None, feature_norm_params=None,
-                 chord_templates=None, softmax_params=None):
-        super(dchord_pipeline).__init__()
+                 chord_template_params=None, softmax_params=None):
+        super(dchord_pipeline, self).__init__()
 
-        self.log_compression = nn_processing.log_compression(**compression_params)
-        self.temporal_smoothing = nn_processing.temporal_smoothing(**temp_smooth_params)
-        self.feature_normalization = nn_processing.feature_normalization(**feature_norm_params)
-        self.chord_templates = dchord_templates(**chord_templates)
-        self.softmax_temperature = nn_processing.softmax_temperature(**softmax_params)
+        self.log_compression = log_compression(**compression_params)
+        self.temporal_smoothing = temporal_smoothing(**temp_smooth_params)
+        self.feature_normalization = feature_normalization(**feature_norm_params)
+        self.chord_template_params = dchord_templates(**chord_template_params)
+        self.softmax_temperature = softmax_temperature(**softmax_params)
 
     def forward(self, x):
         y_pred, _, _, _, _ = self.get_intermediate_data(x)
         return y_pred
     
-#TODO: continue extracting
+    def get_intermediate_data(self, x):
+        x_comp = self.log_compression(x)
+        x_avg = self.temporal_smoothing(x_comp)
+        x_norm = self.feature_normalization(x_avg)
+        x_templates = self.chord_template_params(x_norm)
+        y_pred = self.softmax_temperature(x_templates)
+        return y_pred, x_templates, x_norm, x_avg, x_comp
     
