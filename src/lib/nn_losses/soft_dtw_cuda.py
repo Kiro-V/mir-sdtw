@@ -306,7 +306,6 @@ class SoftDTW(torch.nn.Module):
         # Make sure the dimensions match
         assert bx == by  # Equal batch sizes
         assert dx == dy  # Equal feature dimensions
-
         use_cuda = self.use_cuda
 
         if use_cuda and (lx > 1024 or ly > 1024):  # We should be able to spawn enough threads in CUDA
