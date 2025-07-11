@@ -14,7 +14,7 @@ class dchord_templates(torch.nn.Module):
         normalize_weights: Whether to normalize all templates to unit Euclidean norm
         bias: Whether to allow for a trainable bias
     """
-    def __init__(self, shared_weights=True, initialize_parameters=True, normalize_weights=True, bias=False):
+    def __init__(self, shared_weights=False, initialize_parameters=True, normalize_weights=True, bias=False):
         super(dchord_templates, self).__init__()
 
         if shared_weights:
