@@ -73,7 +73,7 @@ class dchord_pipeline(torch.nn.Module):
         super(dchord_pipeline, self).__init__()
 
         self.log_compression = log_compression(**compression_params)
-        self.temporal_smoothing = temporal_smoothing(**temp_smooth_params)
+        # self.temporal_smoothing = temporal_smoothing(**temp_smooth_params)
         self.feature_normalization = feature_normalization(**feature_norm_params)
         self.chord_template_params = dchord_templates(**chord_template_params)
         self.softmax_temperature = softmax_temperature(**softmax_params)
@@ -84,7 +84,9 @@ class dchord_pipeline(torch.nn.Module):
     
     def get_intermediate_data(self, x):
         x_comp = self.log_compression(x)
-        x_avg = self.temporal_smoothing(x_comp)
+        # No need for temporal smoothing in the current implementation
+        x_avg = x_comp
+        
         x_norm = self.feature_normalization(x_avg)
         x_templates = self.chord_template_params(x_norm)
         y_pred = self.softmax_temperature(x_templates)
