@@ -11,3 +11,5 @@ mir-eval
 librosa
 pysoundfile
 libfmp
+torch
+numba
