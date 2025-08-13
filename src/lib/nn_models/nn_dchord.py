@@ -57,8 +57,8 @@ class dchord_pipeline(torch.nn.Module):
     
     Pipeline:
         1. Input
-        2. Log Compressionnn_dchord_
-        3. Temporal Averaging
+        2. Log Compression
+        2.5 Temporal Smoothing
         4. Normalization
         5. Chord Recognition via Templates
         6. Softmax -> output: chord probabilities
@@ -91,4 +91,8 @@ class dchord_pipeline(torch.nn.Module):
         x_templates = self.chord_template_params(x_norm)
         y_pred = self.softmax_temperature(x_templates)
         return y_pred, x_templates, x_norm, x_avg, x_comp
+    
+    def fit(self, x, y):
+        """Fit the model to the data."""
+        pass
     
