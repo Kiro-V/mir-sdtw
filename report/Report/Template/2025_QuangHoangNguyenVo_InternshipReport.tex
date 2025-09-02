@@ -70,26 +70,12 @@ Typically, you will have an introductory chapter that gives a
 broad overview. Then, the first part of the thesis might start after 
 the introduction.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Report Organization}
-\label{section:thesisOrganization}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-You can setup some layout options and elementary data in \texttt{config.tex}:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Soft Dynamic Time Warping Algorithm}
 \label{chapter:sdtw}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Each chapter should start with a small summary discussing the content and the relation
-of the sections. In this chapter, we elaborate on the theoretical background, 
-foundations and concepts that are being used in the thesis. In particular, we 
-focus on latex construct that are typically used in thesis documents.
-\Section{section:mathEquations} illustrates the usage of math equations.
-Then, in \Section{section:citations}, some examples are given on how to cite literature.
-In \Section{section:tables}, $\ldots$
-
-When using labels, please avoid collisions in the label names.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,48 +83,17 @@ When using labels, please avoid collisions in the label names.
 \label{section:forward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-You may want to display math equations in three distinct styles:
-inline, numbered or non-numbered display. These three styles are used in the
-following paragraph along with labeling, aligning and referencing equations.
 
-A little anecdote tells that Johann Carl Friedrich Gau{\ss}\index{Gau{\ss}}
-was able to compute the sum of numbers in the set
-$\{i \in \N\,|\,i \leq N\}$ in a very short amount of time at the age of nine.
-Apparently, he was able to observe that if $N$ is even, then
-the numbers in the sum can be reordered and grouped so that
-\begin{align}
-    \sum_{i=1}^N i &= 1 + 2 + \ldots + N \notag \\
-                   &= (1 + N) + (2 + N-1) + \ldots + (\frac{N}{2} + \frac{N}{2}+1) \label{eq:gaussSum}\\
-                   &= \frac{N\cdot (N+1)}{2}                                            \label{eq:gaussFormula}
-\end{align}
-If $N$ is even, then the reordering Equation $\eqref{eq:gaussSum}$ simply builds $N/2$ summands
-with value $N+1$, resulting to Equation $\eqref{eq:gaussFormula}$.
-This Equation also holds for odd $N$ and a similar argument holds in this case.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Backward Pass}
 \label{section:backward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In a thesis one might want to cite interesting and relevant
-books~\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER,Mueller07_InformationRetrieval_SPRINGER,Habets07_SpeechDereverberation},
-scientific papers~\cite{HerreT11_AudioObjects_AES,EdlerD09_TimeWarpedDCT},
-or websites~\cite{Mutopia_website}.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Tables}
 \label{section:tables}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Because tables cannot, (well, at least not easily) be split across pages, the best
-placement for them is typically the top of the page
-nearest their initial cite.  To
-ensure this proper ``floating'' placement of tables, use the
-environment \emph{table} to enclose the table's contents and
-the table caption.  The contents of the table itself must go
-in the \emph{tabular} environment, to
-be aligned properly in rows and columns, with the desired
-horizontal and vertical rules, as seen in \Table{table:characters}.
 
 \begin{table}[t]
 \centering
@@ -159,85 +114,6 @@ vertical lines which makes the table look more tidy.}
 \label{table:characters}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Figures}
-\label{section:figures}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Like tables, figures cannot be split across pages; the
-best placement for them
-is typically the top or the bottom of the page nearest
-their initial cite.  To ensure this proper ``floating'' placement
-of figures, use the environment
-\emph{figure} to enclose the figure and its caption.
-This sample thesis document contains examples of \emph{.pdf}
-files to be displayable with \LaTeX. 
-
-Typically, in addition to a \emph{figure} environment, we use
-use PowerPoint that allows us to easily align and position subfigures as well as labels, as done in \Figure{figure:signals}.
-By the way, the curves shown in \Figure{figure:signals} have been generated with
-\MATLAB{}. Please find the generating sample script in \texttt{figures/figures.m}.
-
-Including pixel graphics like in \Figure{figure:smiley} is also possible.
-As mentioned before, pixel graphics have to be converted to the allowed formats
-beforehand.
-
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=12cm]{figures/fig_sines.pdf}
-\vspace*{-0cm}
-\caption{Sine functions with different amplitudes $A$, frequencies $\omega$ and phases $\theta$ can be
-calculated as $f_{A, \omega, \theta}(t) = A \sin(2\pi (\omega t-\theta))$.}
-\label{figure:signals}
-\end{figure}
-
-
-%\begin{figure}[t]
-%\centering
-%\psset{xunit=1cm, yunit=1cm}
-%\begin{pspicture}(0,0)(5,2) % (coordinate system origin)(width and height in centimeters)
-%    \psgrid
-%\end{pspicture}
-%\caption{A simple grid sometimes helps to find the right coordinates in the figure.}
-%\label{figure:grid}
-%\end{figure}
-
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=4cm]{figures/Smiley.pdf}
-\vspace*{-0cm}
-\caption{Pixel graphics can also be included, but in low resolution it looks terrible and in high resolution is takes ages to load.}
-\label{figure:smiley}
-\end{figure}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Theorem-like Constructs}
-\label{section:constructs}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Other common constructs that may occur in your thesis are
-the forms for logical constructs like theorems, axioms,
-corollaries and proofs. See the following example:
-
-\begin{Theorem}
-Let $f$ be continuous on $[a,b]$.  If $G$ is
-an antiderivative for $f$ on $[a,b]$, then
-\begin{align}
-  \int^{b}_{a}f(t)dt = G(b) - G(a).
-\end{align}
-\end{Theorem}
-
-The following is a definition:
-\begin{Definition}
-If $z$ is irrational, then by $e^z$ we mean the
-unique number which has logarithm $z$:
-\begin{align}
-  \log e^z = z.
-\end{align}
-\end{Definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Experimental Setup}
@@ -246,13 +122,14 @@ unique number which has logarithm $z$:
 
 \section{Data Preparation}
 \label{section:data_preparation}
+For the experiments, we will use "the Beatles" dataset taken from Isophonics \cite{Isophonics}, which contains audio recordings and their corresponding chord annotations. This dataset is denoted as "strongly-aligned" since the chord labels are precisely aligned with the audio.
+Based on this dataset, we create a "soft" version by removing the repetitions in the chord annotations, resulting in a shorter chord label sequence, as illustrated in Figure \ref{fig:strongly_vs_weakly_aligned}. This simulates a weakly-aligned dataset where the exact timing of chord changes is unknown.
 
-The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data. The dDTW loss function will then be used to train the model with the distorted dataset. The results will be compared with those obtained using the original dataset and the Connectionist Temporal Classification (CTC) loss function. Additional tasks may include experimenting and evaluating the performance of sDTW with different stablizing strategies.
 
 \section{Model Architecture}
 \label{section:model_architecture}
-
-The model architecture will be based on a standard sequence-to-sequence framework, with an encoder-decoder structure. The encoder will process the input audio features, while the decoder will generate the corresponding chord labels. Attention mechanisms may be employed to improve alignment between the input and output sequences.
+Given the aim of this experiment is to evaluate the performance of the proposed SDTW loss function, the network architecture plays a minor role and are kept simple. Therefore, we used a basic chord recognition model (dChord) consisting of
+a single convolutional layer followed by a softmax layer. Preceding this layer is a log-compression layer to reduce the dynamic range of the input features and a feature normalization layer to standardize the input features. The model takes as input a sequence of chroma features extracted from the audio signal and outputs a hot encoded vector representing the predicted chord.
 
 \section{Training Procedure}
 \label{section:training_procedure}
