@@ -30,7 +30,12 @@
 \newpage
 
 \section*{Abstract}
-
+The evolution of Deep Neural Networks (DNNs) has shifted the paradigm of music information retrieval (MIR) from heuristic and mathematical models to data-driven approaches, which rely on large amounts of labelled training data.
+However, it introduces challenges when training with weakly aligned datasets. In this project, we investigate the characteristics of differential dynamic time warping (dDTW) through the soft-DTW (sDTW) algorithm when training with weakly aligned data.
+The main objective is to integrate soft-DTW as a loss function in the training process of a template-based chord recognition model.
+The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data.
+The dDTW loss function will then be used to train the model with the distorted dataset. The results will be compared with those obtained using the original dataset and the Connectionist Temporal Classification (CTC) loss function.
+Additional tasks may include experimenting and evaluating the performance of sDTW with different stablizing strategies.
 \mainmatter{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Table of Contents
@@ -70,17 +75,10 @@ the introduction.
 \label{section:thesisOrganization}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 You can setup some layout options and elementary data in \texttt{config.tex}:
-\begin{itemize}
-    \item the title of your thesis: \texttt{\textbackslash{} myTitle\{TITLE OF YOUR REPORT\}}
-    \item your name: \texttt{\textbackslash{} myName\{John Public\}}
-    \item your professor: \texttt{\textbackslash{} myProf\{Prof.\ Dr.\ Max Mustermann\}}
-    \item your supervisor: \texttt{\textbackslash{} mySupervisor\{Prof.\ Dr.\ Max Mustermann \}}    
-    \item your submission date: \texttt{\textbackslash{} myTime\{\textbackslash{} today\}}        
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Theoretic Foundations}
-\label{chapter:Foundations}
+\chapter{Soft Dynamic Time Warping Algorithm}
+\label{chapter:sdtw}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Each chapter should start with a small summary discussing the content and the relation
@@ -95,8 +93,8 @@ When using labels, please avoid collisions in the label names.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Math Equations}
-\label{section:mathEquations}
+\section{Forward Pass}
+\label{section:forward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 You may want to display math equations in three distinct styles:
@@ -118,8 +116,8 @@ with value $N+1$, resulting to Equation $\eqref{eq:gaussFormula}$.
 This Equation also holds for odd $N$ and a similar argument holds in this case.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Citations}
-\label{section:citations}
+\section{Backward Pass}
+\label{section:backward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In a thesis one might want to cite interesting and relevant
@@ -242,55 +240,86 @@ unique number which has logarithm $z$:
 \end{Definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Experimental Setup}
+\label{chapter:experimental_setup}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Data Preparation}
+\label{section:data_preparation}
+
+The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data. The dDTW loss function will then be used to train the model with the distorted dataset. The results will be compared with those obtained using the original dataset and the Connectionist Temporal Classification (CTC) loss function. Additional tasks may include experimenting and evaluating the performance of sDTW with different stablizing strategies.
+
+\section{Model Architecture}
+\label{section:model_architecture}
+
+The model architecture will be based on a standard sequence-to-sequence framework, with an encoder-decoder structure. The encoder will process the input audio features, while the decoder will generate the corresponding chord labels. Attention mechanisms may be employed to improve alignment between the input and output sequences.
+
+\section{Training Procedure}
+\label{section:training_procedure}
+
+The training procedure will involve optimizing the model parameters using the dDTW loss function on the distorted dataset. The model will be evaluated on both the distorted and original datasets to assess its robustness to label noise. Hyperparameter tuning and regularization techniques may be applied to improve generalization.
+
+\section{Results}
+\label{section:results}
+
+\section{Discussion}
+\label{section:discussion}
+
+In this section, we will discuss the implications of the results obtained from the experiments. We will analyze the performance of the proposed method in comparison to existing approaches and highlight its strengths and weaknesses. Additionally, we will explore potential avenues for future research and improvements.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
 \label{chapter:conclusions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\section{Limitation}
+\label{section:limitations}
+\section{Future Work}
+\label{section:future_work}
 Draw the conclusions in the big picture of the thesis! Then, indicate future work.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Appendix
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\cleardoublepage{}
-\appendix
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Source Code}
-\label{chapter:source_code}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Appendix
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \cleardoublepage{}
+% \appendix
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \chapter{Source Code}
+% \label{chapter:source_code}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this chapter, the headers of selected \MATLAB{} functions created during the writing of this thesis are reproduced. The headers contain information about the name of the described function and its input/output behavior.
+% In this chapter, the headers of selected \MATLAB{} functions created during the writing of this thesis are reproduced. The headers contain information about the name of the described function and its input/output behavior.
 
-\section*{Feature Extraction}
-The \texttt{file\_to\_feature} function is used as a wrapper for several low-level functions that perform feature extraction or loading of precomputed features.
+% \section*{Feature Extraction}
+% The \texttt{file\_to\_feature} function is used as a wrapper for several low-level functions that perform feature extraction or loading of precomputed features.
 
-Sample usage:\\
-\scriptsize
-\verb|[f_pitch, f_peaks] = file_to_feature('features', 'pathetique.wav');|
+% Sample usage:\\
+% \scriptsize
+% \verb|[f_pitch, f_peaks] = file_to_feature('features', 'pathetique.wav');|
 
-\begin{verbatim}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Name: file_to_feature
-% Version: 1.0
-% Date: 11.05.2010
-% Programmer: John Q. Public
-%
-% Description:
-%   Load or compute features for audio and MIDI files
-%
-% Input:
-% - dirname: Directory where the file or features are located
-% - filename: Name of the file for which to load/compute features
-% - parameter
-%            .win_len: Window length used for STMSP feature generation
-%            .win_res: Window resolution
-%
-% Output:
-% - f_pitch: Pitch features (STMSP)
-% - f_peaks: Energy peaks for onset computation
-% - f_onsets: Precise onsets (only generated in case of MIDI input data)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\end{verbatim}
-\normalsize
+% \begin{verbatim}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Name: file_to_feature
+% % Version: 1.0
+% % Date: 11.05.2010
+% % Programmer: John Q. Public
+% %
+% % Description:
+% %   Load or compute features for audio and MIDI files
+% %
+% % Input:
+% % - dirname: Directory where the file or features are located
+% % - filename: Name of the file for which to load/compute features
+% % - parameter
+% %            .win_len: Window length used for STMSP feature generation
+% %            .win_res: Window resolution
+% %
+% % Output:
+% % - f_pitch: Pitch features (STMSP)
+% % - f_peaks: Energy peaks for onset computation
+% % - f_onsets: Precise onsets (only generated in case of MIDI input data)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \end{verbatim}
+% \normalsize
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Bibliography
