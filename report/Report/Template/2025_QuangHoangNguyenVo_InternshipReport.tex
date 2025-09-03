@@ -77,7 +77,6 @@ the introduction.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Forward Pass}
 \label{section:forward_pass}
@@ -91,68 +90,66 @@ the introduction.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Tables}
-\label{section:tables}
+\section{Soft Alignment}
+\label{section:soft_alignment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{table}[t]
-\centering
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{@{}cll@{}} 
-\toprule
-Non-English or Math & Frequency & Comments\\ 
-\midrule
-\O & 1 in 1,000& For Swedish names\\
-$\pi$ & 1 in 5& Common in math\\
-\$ & 4 in 5 & Used in business\\
-$\Psi^2_1$ & 1 in 40,000& Unexplained usage\\
-\bottomrule
-\end{tabular}
-\vspace*{-0cm}
-\caption{Frequency of Special Characters. Note that this table does not contain any
-vertical lines which makes the table look more tidy.}
-\label{table:characters}
-\end{table}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Experimental Setup}
 \label{chapter:experimental_setup}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this section, we present the objectives of our experiment, the dataset used for training alongside with the network architecture and the training process.
 
-\section{Data Preparation}
-\label{section:data_preparation}
-For the experiments, we will use "the Beatles" dataset taken from Isophonics \cite{Isophonics}, which contains audio recordings and their corresponding chord annotations. This dataset is denoted as "strongly-aligned" since the chord labels are precisely aligned with the audio.
-Based on this dataset, we create a "soft" version by removing the repetitions in the chord annotations, resulting in a shorter chord label sequence, as illustrated in Figure \ref{fig:strongly_vs_weakly_aligned}. This simulates a weakly-aligned dataset where the exact timing of chord changes is unknown.
+\section{Dataset}
+\label{section:datset}
+For the experiment, we use the Beatles dataset retrieved from Isophonics \cite{isopho}, consisting of four audio recordings with respective annotations. Due to the simplicity of the current chord recognition network, we need to simplify the chord labels, so that the annotations only have major and minor chords.
+We split the dataset into training, validation, and test sets. For test set, a short segment of Let It Be is used, while the rest of the dataset is split into 3:1 ratio for training and validation.
+
+We choose a sequence length of 150 samples for training and validating the model, creating 43 and 12 segments for training and validation, respectively.
+In case of soft alignment, we remove the adjacent repetitions in the sequence, effectively reducing its length by around 85\% on average (see Figure \ref{figure:soft_alignment}).
+However, this method introduce a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences repeating each frame uniformly until they reach a desired length, or "soft length".
+After some experiments, we found that a soft length of 16 covers all of possible reduced sequences while keeping the reduction ratio high.
 
 
 \section{Model Architecture}
 \label{section:model_architecture}
-Given the aim of this experiment is to evaluate the performance of the proposed SDTW loss function, the network architecture plays a minor role and are kept simple. Therefore, we used a basic chord recognition model (dChord) consisting of
-a single convolutional layer followed by a softmax layer. Preceding this layer is a log-compression layer to reduce the dynamic range of the input features and a feature normalization layer to standardize the input features. The model takes as input a sequence of chroma features extracted from the audio signal and outputs a hot encoded vector representing the predicted chord.
+Given the aim of this experiment is to evaluate the performance of the proposed SDTW loss function, the network architecture plays a minor role and are kept simple.
+Therefore, we used a simple chord recognition network (dChord) that based on the template-based chord recognition algorithm.
+This network consists of a single layer that acts as the chord template to predict a 24-dimensional chord label activation vector, corresponding to 12 chromas with their respective major or minor variant. Combined with log-compression and feature normalization layers,
+the network has a total of 25 trainable parameters.
+Table \ref{table:arch} illustrate the components of the architecture with their respective input and output dimensions.
 
-\section{Training Procedure}
-\label{section:training_procedure}
+During training, we use Adam optimizer with a learning rate of 0.01.
 
-The training procedure will involve optimizing the model parameters using the dDTW loss function on the distorted dataset. The model will be evaluated on both the distorted and original datasets to assess its robustness to label noise. Hyperparameter tuning and regularization techniques may be applied to improve generalization.
+\begin{table}[t]
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Layer & Input Dimension & Output Dimension & Parameters \\
+        \hline
+        Log-compression & (12, T) & (12, T) & 0 \\
+        Normalization & (12, T) & (12, T) & 0 \\
+        dChord & (12, T) & (24, T) & 25 \\
+        softmax & (24, T) & (24, T) & 0 \\
+        \hline
+    \end{tabular}
+        \caption{Architecture of the chord recognition network. T is the number of time frames.}
+        \label{table:arch}
+    \end{center}
+\end{table}
 
-\section{Results}
-\label{section:results}
 
-\section{Discussion}
-\label{section:discussion}
 
-In this section, we will discuss the implications of the results obtained from the experiments. We will analyze the performance of the proposed method in comparison to existing approaches and highlight its strengths and weaknesses. Additionally, we will explore potential avenues for future research and improvements.
+\section{Results and Discussion}
+\label{section:resultsdiscussion}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
 \label{chapter:conclusions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Limitation}
-\label{section:limitations}
-\section{Future Work}
-\label{section:future_work}
-Draw the conclusions in the big picture of the thesis! Then, indicate future work.
+
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Appendix
