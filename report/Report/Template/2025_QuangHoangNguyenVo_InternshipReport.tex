@@ -57,25 +57,18 @@ Additional tasks may include experimenting and evaluating the performance of sDT
 \chapter{Introduction}
 \label{chapter:Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Amidst the rapid advancement of deep neural networks (DNNs), the field of music information retrieval (MIR) has witnessed a significant shift from traditional heuristic and mathematical models to data-driven approaches that heavily rely on large amounts of labelled training data, such as pitch estimation \cite{Kim2018_CREPEmodel_ISMIR}, audio embeddings \cite{Cramer2019_OpenL3_ISMIR}, automatic music transcription \cite{Benetos2019_AutomaticMusicTranscription}.
 
-Generally speaking, the introduction chapter should introduce the 
-topic of the thesis and motivate the importance of it. Moreover, the
-introduction should give an outline of the thesis and point out the 
-contributions of this work.
+However, the reliance on large and accurate datasets poses many challenges, considering the time-consuming and labor-intensive nature of manual annotation, as well as the potential for human error and subjectivity. Thus, it is generally difficult to obtain strongly aligned annotations, where each frame of the audio signal is associated with a corresponding label. Instead, weakly aligned or unaligned annotations are more common, where only the presence or absence of certain labels is known, without precise temporal alignment. This ease up the data acquisition process, but requires a more sophisticated loss function to train the model. One proposed solution is using connectionist temporal classification (CTC) loss \cite{Graves2006_ConnectionistTemporalClassification_ICML}.
 
-You can logically group the chapters of the thesis
-by using so-called parts. An example of how to insert a part-page 
-containing a teaser-image is included in this template.
-Typically, you will have an introductory chapter that gives a
-broad overview. Then, the first part of the thesis might start after 
-the introduction.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Soft Dynamic Time Warping Algorithm}
 \label{chapter:sdtw}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+In this chapter, we present the mathematical formulation of the soft-DTW algorithm.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Forward Pass}
@@ -102,9 +95,12 @@ the introduction.
 In this section, we present the objectives of our experiment, the dataset used for training alongside with the network architecture and the training process.
 
 \section{Dataset}
-\label{section:datset}
-For the experiment, we use the Beatles dataset retrieved from Isophonics \cite{isopho}, consisting of four audio recordings with respective annotations. Due to the simplicity of the current chord recognition network, we need to simplify the chord labels, so that the annotations only have major and minor chords.
-We split the dataset into training, validation, and test sets. For test set, a short segment of Let It Be is used, while the rest of the dataset is split into 3:1 ratio for training and validation.
+\label{section:dataset}
+For the experiment, we use the Beatles dataset retrieved from Isophonics \cite{HarteSAG05_ChordRecognition_ISMIR}, consisting of four audio recordings with respective annotations. 
+Since the original annotations have more than 24 chord types, which would make the network too complex and beyond the scope of this project.
+We therefore consider the simplified version of such annotations, which reduced the number of chord types to only 24 (12 chromas with their respective major or minor variant)\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+We split the dataset into training, validation, and test sets. For test set, a short segment of Let It Be is used,
+while the rest of the dataset is split into 3:1 ratio for training and validation.
 
 We choose a sequence length of 150 samples for training and validating the model, creating 43 and 12 segments for training and validation, respectively.
 In case of soft alignment, we remove the adjacent repetitions in the sequence, effectively reducing its length by around 85\% on average (see Figure \ref{figure:soft_alignment}).
@@ -116,8 +112,8 @@ After some experiments, we found that a soft length of 16 covers all of possible
 \label{section:model_architecture}
 Given the aim of this experiment is to evaluate the performance of the proposed SDTW loss function, the network architecture plays a minor role and are kept simple.
 Therefore, we used a simple chord recognition network (dChord) that based on the template-based chord recognition algorithm.
-This network consists of a single layer that acts as the chord template to predict a 24-dimensional chord label activation vector, corresponding to 12 chromas with their respective major or minor variant. Combined with log-compression and feature normalization layers,
-the network has a total of 25 trainable parameters.
+This network consists of a single layer that acts as the chord template to predict a 24-dimensional activation vector, corresponding to 24 chord types.
+The network has a total of 25 trainable parameters.
 Table \ref{table:arch} illustrate the components of the architecture with their respective input and output dimensions.
 
 During training, we use Adam optimizer with a learning rate of 0.01.
@@ -128,10 +124,10 @@ During training, we use Adam optimizer with a learning rate of 0.01.
         \hline
         Layer & Input Dimension & Output Dimension & Parameters \\
         \hline
-        Log-compression & (12, T) & (12, T) & 0 \\
-        Normalization & (12, T) & (12, T) & 0 \\
-        dChord & (12, T) & (24, T) & 25 \\
-        softmax & (24, T) & (24, T) & 0 \\
+        Log-compression & (12, 150) & (12, 150) & 0 \\
+        Normalization & (12, 150) & (12, 150) & 0 \\
+        dChord & (12, 150) & (24, 150) & 25 \\
+        softmax & (24, 150) & (24, 150) & 0 \\
         \hline
     \end{tabular}
         \caption{Architecture of the chord recognition network. T is the number of time frames.}
@@ -144,6 +140,11 @@ During training, we use Adam optimizer with a learning rate of 0.01.
 \section{Results and Discussion}
 \label{section:resultsdiscussion}
 
+\section{Baseline: Strongly Aligned Data with Binary Cross-entropy Loss}
+\label{section:baseline}
+
+\section{Weakly Aligned Data with Soft-DTW Loss}
+\label{section:weakly_aligned}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
@@ -202,7 +203,7 @@ During training, we use Adam optimizer with a learning rate of 0.01.
 {
 \small
 \addcontentsline{toc}{chapter}{Bibliography}
-\bibliographystyle{siam}
+\bibliographystyle{ieeetr}
 \bibliography{bibliography}
 }
 \cleardoublepage{}
