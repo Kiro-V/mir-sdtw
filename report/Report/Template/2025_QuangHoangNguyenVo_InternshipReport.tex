@@ -64,28 +64,73 @@ However, the reliance on large and accurate datasets poses many challenges, cons
 
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Soft Dynamic Time Warping Algorithm}
 \label{chapter:sdtw}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 In this chapter, we present the mathematical formulation of the soft-DTW algorithm.
+\section{Definition and Notation}
+Let $\mathbf{x} = (x_0, \ldots, x_{N-1}) \in \mathbb{R}^N$  and $\mathbf{y} = (y_0, \ldots, y_{M-1}) \in \mathbb{R}^M$ be two time series of representing the sequence of predictions and strong targets, respectively. We then denote the soft target sequence as $\mathbf{y'} = (y'_0, \ldots, y'_{M'-1}) \in \mathbb{R}^{M'}$, where $M' < M$. The objective of soft-DTW is to calculate the alignment cost matrix between $\mathbf{x}$ and $\mathbf{y'}$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Forward Pass}
 \label{section:forward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In the forward pass, we compute the accumulated cost matrix $\mathbf{D}(M,N) \in \mathbb{R}^{M \times N}$, where each element $D(i,j)$ represents the minimum cost of aligning the first $i$ elements of $\mathbf{y'}$ with the first $j$ elements of $\mathbf{x}$.
+The accumulated cost is computed using the local cost matrix $\mathbf{C}$, where $\mathbf{C}(i,j) = c(x_i, y'_j)$, which measures the dissimilarity between the elements $x_i$ and $y'_j$. A common choice for the local cost function is the squared Euclidean distance:
+\begin{equation}
+    \mathbf{C}(i,j) = \| x_i - y'_j \|^2
+\end{equation}
+Instead of using the hard minimum operator as in traditional DTW, soft-DTW employs a differentiable approximation, defined as:
+\begin{equation}
+    \text{min}^\gamma = -\gamma \log \sum_{s \in S} \left( e^{-s/\gamma} \right)
+\end{equation}
+where $\gamma > 0$ is a smoothing parameter that controls the softness of the minimum operation, and $S$ is the set of values over which the soft minimum is computed.
+Combining with the step constraint of DTW, we only consider three possible predecessor cells for each cell $(i,j)$, which are $(i-1,j)$, $(i,j-1)$, and $(i-1,j-1)$.
+Thus the accumulated cost matrix $\mathbf{D}$ is computed recursively as follows:
+\begin{equation}
+    \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right)
+\end{equation}
 
+The recursive algorithm is summarized in Algorithm \ref{algorithm:forward_pass}.
 
+\begin{algorithm}[t]
+\caption{Forward Pass of Soft-DTW}
+\label{algorithm:forward_pass}
+\begin{algorithmic}
+\Require Time series $\mathbf{x} \in \mathbb{R}^N$, $\mathbf{y'} \in \mathbb{R}^{M'}$, smoothing parameter $\gamma > 0$
+\Ensure Accumulated cost matrix $\mathbf{D} \in \mathbb{R}^{M' \times N}$
+\State Initialize $\mathbf{D}(0,0) = 0$
+\For{$i = 1$ to $M'$}
+    \State $\mathbf{D}(i,0) = \infty$
+\EndFor
+\For{$j = 1$ to $N$}
+    \State $\mathbf{D}(0,j) = \infty$
+\EndFor
+\For{$i = 1$ to $M'$}
+    \For{$j = 1$ to $N$}
+        \State Compute local cost: $\mathbf{C}(i,j) = \| x_j - y'_i \|^2$
+        \State Update accumulated cost:
+        \[
+        \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right)
+        \]
+    \EndFor
+\EndFor
+
+\Return $\mathbf{D}$
+\end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Backward Pass}
 \label{section:backward_pass}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Soft Alignment}
-\label{section:soft_alignment}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In order to train the model, we need to compute the gradients of the soft-DTW loss with respect to the model parameters. The backward pass computes the gradient $H \in \mathbb{R}^{M' \times N}$ of the soft-DTW cost with respect to the cost matrix $\mathbf{C} \in \mathbb{R}^{M' \times N}$.
+An efficient way to compute the gradient is to use a dynamic programming approach similar to the forward pass. The gradient is computed recursively as follows:
+\begin{equation}
+    \mathbf{H}(i,j) = \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i,j)} \frac {\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}
+\end{equation}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
