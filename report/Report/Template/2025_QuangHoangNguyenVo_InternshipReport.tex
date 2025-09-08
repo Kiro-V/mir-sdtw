@@ -96,30 +96,30 @@ Thus the accumulated cost matrix $\mathbf{D}$ is computed recursively as follows
 The recursive algorithm is summarized in Algorithm \ref{algorithm:forward_pass}.
 
 \begin{algorithm}[t]
-\caption{Forward Pass of Soft-DTW}
-\label{algorithm:forward_pass}
-\begin{algorithmic}
-\Require Time series $\mathbf{x} \in \mathbb{R}^N$, $\mathbf{y'} \in \mathbb{R}^{M'}$, smoothing parameter $\gamma > 0$
-\Ensure Accumulated cost matrix $\mathbf{D} \in \mathbb{R}^{M' \times N}$
-\State Initialize $\mathbf{D}(0,0) = 0$
-\For{$i = 1$ to $M'$}
-    \State $\mathbf{D}(i,0) = \infty$
-\EndFor
-\For{$j = 1$ to $N$}
-    \State $\mathbf{D}(0,j) = \infty$
-\EndFor
-\For{$i = 1$ to $M'$}
-    \For{$j = 1$ to $N$}
-        \State Compute local cost: $\mathbf{C}(i,j) = \| x_j - y'_i \|^2$
-        \State Update accumulated cost:
-        \[
-        \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right)
-        \]
+    \caption{Forward Pass of Soft-DTW}
+    \label{algorithm:forward_pass}
+    \begin{algorithmic}
+    \Require Time series $\mathbf{x} \in \mathbb{R}^N$, $\mathbf{y'} \in \mathbb{R}^{M'}$, smoothing parameter $\gamma > 0$
+    \Ensure Accumulated cost matrix $\mathbf{D} \in \mathbb{R}^{M' \times N}$
+    \State Initialize $\mathbf{D}(0,0) = 0$
+    \For{$i = 1$ to $M'$}
+        \State $\mathbf{D}(i,0) = \infty$
     \EndFor
-\EndFor
+    \For{$j = 1$ to $N$}
+        \State $\mathbf{D}(0,j) = \infty$
+    \EndFor
+    \For{$i = 1$ to $M'$}
+        \For{$j = 1$ to $N$}
+            \State Compute local cost: $\mathbf{C}(i,j) = \| x_j - y'_i \|^2$
+            \State Update accumulated cost:
+            \[
+            \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right)
+            \]
+        \EndFor
+    \EndFor
 
-\Return $\mathbf{D}$
-\end{algorithmic}
+    \Return $\mathbf{D}$
+    \end{algorithmic}
 \end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,8 +131,58 @@ An efficient way to compute the gradient is to use a dynamic programming approac
 \begin{equation}
     \mathbf{H}(i,j) = \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i,j)} \frac {\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}
 \end{equation}
+During the backward pass, we consider three predecessor cells for each cell $(i,j)$, which are $(i+1,j)$, $(i,j+1)$, and $(i+1,j+1)$.
+This expands the gradient computation to:
+\begin{equation}
+    \mathbf{H}(i,j) = \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i+1,j)} \frac{\partial \mathbf{D}(i+1,j)}{\partial \mathbf{D}(i,j)} + \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i,j+1)} \frac{\partial \mathbf{D}(i,j+1)}{\partial \mathbf{D}(i,j)} + \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i+1,j+1)} \frac{\partial \mathbf{D}(i+1,j+1)}{\partial \mathbf{D}(i,j)}
+\end{equation}
 
+For simplicity, we denote $\mathbf{E}(i,j) = \frac{\partial \mathbf{D}(M',N)}{\partial \mathbf{D}(i,j)}$ and $\mathbf{F}^{p, q}(i,j) = \frac{\partial \mathbf{D}(i+p,j+q)}{\partial \mathbf{D}(i,j)}$, where $p, q \in \{0, 1\}$.
 
+Using the derivative of the soft minimum operator w.r.t. to its input $s \in \mathcal S$
+\begin{equation}
+    \frac{\partial \text{min}^\gamma(s)}{\partial s} = \frac{e^{-s/\gamma}}{\sum_{s' \in \mathcal S} e^{-s'/\gamma}}
+\end{equation}
+
+Without loss of generality, we can compute $\mathbf{F}^{1,0}(i,j)$ as follows:
+\begin{equation}
+    \mathbf{F}^{1,0}(i,j) = \frac{\partial \text{min}^\gamma(\mathbf{D}(i+1,j))}{\partial \mathbf{D}(i,j)} \\
+    = \frac{e^{-(\mathbf{C}(i+1,j) - \mathbf{D}(i,j))/\gamma}}{e^{-\mathbf{D}(i,j)/\gamma}}
+\end{equation}
+Similarly, we can compute $\mathbf{F}^{0,1}(i,j)$ and $\mathbf{F}^{1,1}(i,j)$.
+Then we can reformulate $\mathbf{E}$ as:
+\begin{equation}
+    \mathbf{E}(i,j) = \mathbf{E}(i+1,j) \mathbf{F}^{1,0}(i,j) + \mathbf{E}(i,j+1) \mathbf{F}^{0,1}(i,j) + \mathbf{E}(i+1,j+1) \mathbf{F}^{1,1}(i,j)
+\end{equation}
+Denote $\mathbf{G}(i,j) = \frac{\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}$, we have the final formulation of $\mathbf{H}$ as:
+\begin{equation}
+    \mathbf{H}(i,j) = \mathbf{E}(i,j) \mathbf{G}(i,j)
+\end{equation}
+For initialization, we add and extra column and row to $\mathbf{E}$, setting $\mathbf{E}(M'+1, N+1) = 1$ and $\mathbf{E}(i,i)$ to be $-\infty$ and $0$ for the rest of the extra row and column. Algorithm \ref{algorithm:backward_pass} presents the complete overview of the recursion for gradient computation.
+
+\begin{algorithm}[t]
+    \caption{Backward Pass of Soft-DTW}
+    \label{algorithm:backward_pass}
+    \begin{algorithmic}
+        \Require $\mathbf{C}, \mathbf{D} \in \mathbb{R}^{M' \times N}$, $\gamma > 0$
+        \Ensure Gradient matrix $\mathbf{H} \in \mathbb{R}^{M' \times N}$
+        \State $\mathbf{C}(M'+1,:) = \mathbf{C}(:,N+1) = 0$
+        \State $\mathbf{D}(M'+1,:) = \mathbf{D}(:,N+1) = -\infty$
+        \State $\mathbf{D}(M'+1,N+1) = D(M',N)$
+        \State $\mathbf{E}(M'+1,:) = \mathbf{E}(:,N+1) = 0$
+        \State $\mathbf{E}(M'+1,N+1) = 1$
+        \For {i = M' down to 1}
+            \For {j = N down to 1}
+                \State Compute $\mathbf{F}^{1,0}(i,j), \mathbf{F}^{0,1}(i,j), \mathbf{F}^{1,1}(i,j)$
+                \State Update $\mathbf{E}(i,j) = \mathbf{E}(i+1,j) \mathbf{F}^{1,0}(i,j) + \mathbf{E}(i,j+1) \mathbf{F}^{0,1}(i,j) + \mathbf{E}(i+1,j+1) \mathbf{F}^{1,1}(i,j)$
+                \State Compute $\mathbf{G}(i,j) = \frac{\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}$
+                \State Update $\mathbf{H}(i,j) = \mathbf{E}(i,j) \mathbf{G}(i,j)$
+            \EndFor 
+        \EndFor
+
+        \Return $\mathbf{H}$
+    \end{algorithmic}
+\end{algorithm}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Experimental Setup}
 \label{chapter:experimental_setup}
@@ -149,8 +199,18 @@ while the rest of the dataset is split into 3:1 ratio for training and validatio
 
 We choose a sequence length of 150 samples for training and validating the model, creating 43 and 12 segments for training and validation, respectively.
 In case of soft alignment, we remove the adjacent repetitions in the sequence, effectively reducing its length by around 85\% on average (see Figure \ref{figure:soft_alignment}).
-However, this method introduce a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences repeating each frame uniformly until they reach a desired length, or "soft length".
-After some experiments, we found that a soft length of 16 covers all of possible reduced sequences while keeping the reduction ratio high.
+\begin{figure}[t]
+    \centering
+    \includegraphics[scale=0.5]{figures/data_strong.png}
+    \\
+    \vspace{0.5cm}
+    \includegraphics[scale=0.5]{figures/data_soft.png}
+    \caption{Example of strong and soft target sequences. The strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions.}
+    \label{figure:soft_alignment}
+\end{figure}
+
+However, this method introduce a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences repeating elements until they reach a desired length, or "soft length".
+After some experiments, we found that a soft length of 16 covers all of possible reduced sequences while keeping the reduction ratio high. For which elements are repeated, we derived several strategies, either uniformly over all elements, or only repeat the last element until reaching the desired length.
 
 
 \section{Model Architecture}
@@ -161,17 +221,15 @@ This network consists of a single layer that acts as the chord template to predi
 The network has a total of 25 trainable parameters.
 Table \ref{table:arch} illustrate the components of the architecture with their respective input and output dimensions.
 
-During training, we use Adam optimizer with a learning rate of 0.01.
-
 \begin{table}[t]
     \begin{center}
     \begin{tabular}{|c|c|c|c|}
         \hline
         Layer & Input Dimension & Output Dimension & Parameters \\
         \hline
-        Log-compression & (12, 150) & (12, 150) & 0 \\
+        Log-compression & (12, 150) & (12, 150) & 1 \\
         Normalization & (12, 150) & (12, 150) & 0 \\
-        dChord & (12, 150) & (24, 150) & 25 \\
+        dChord & (12, 150) & (24, 150) & 24 \\
         softmax & (24, 150) & (24, 150) & 0 \\
         \hline
     \end{tabular}
@@ -180,17 +238,69 @@ During training, we use Adam optimizer with a learning rate of 0.01.
     \end{center}
 \end{table}
 
+During the training process, we use Adam Optimizer \cite{Kingma2017_AdamMethodStochasticOptimization} with a a learning rate $\alpha = 0.1$ with $\beta_1 = 0.9$, $\beta_2 = 0.999$ and $\epsilon = 10^{-8}$. Since the dataset is small, we use a batch size of 5 and enable share weight, where the weight of chords in the same class (major or minor) are shared. The model is trained for 200 epochs, and the best model is selected based on the validation loss.
 
 
-\section{Results and Discussion}
-\label{section:resultsdiscussion}
 
-\section{Baseline: Strongly Aligned Data with Binary Cross-entropy Loss}
+\chapter{Evaluation}
+\label{chapter:evaluation}
+In this section, we evaluate the performance of the aforementioned soft-DTW loss function against the baseline model trained with binary cross-entropy loss for the task of chord recognition. For each case, we train with the respective dataset, either strong or soft targets, and calculate the F1 measure on the test set.
+
+\section{Training with SDTW loss}
+\label{section:training_sdtw}
+Figure \ref{figure:train_curves} shows the training and validation loss curves of the models trained on strong and soft targets. We can see overall the loss decreases over time, indicating that the models are learning from the data,
+despite much higher loss value for the model trained on soft target, which ranges from 130 to 70, compared to 2.5 to 0.75 for the model trained on strong target.This is expected, as the soft target contains less information, making it more difficult for the model to learn.
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_strong/learncurve-strong.png}
+        \caption{Training and validation loss curves of the model trained on strong target with binary cross-entropy loss. The model converges after around 20 epochs.}
+        \label{figure:strong_train_curves}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve-gam03.png}
+        \caption{Training and validation loss curves of the model trained on soft target with soft-DTW loss. The model converges after around 60 epochs.}
+        \label{figure:soft_train_curves}
+    \end{subfigure}
+    \caption{Training and validation loss curves of the models trained on strong and soft targets.}
+    \label{figure:train_curves}
+\end{figure}
+
+\section{Training results}
 \label{section:baseline}
+\begin{table}[t]
+    \label{table:results_strong}
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Target/ Original Length & Loss Function & Test F1-score (\%)    & Epochs \\
+                                & (Pad Strategy) &                      & to best val. loss \\
+        \hline
+        150/150 & Binary Cross-entropy & 78.5 & 45 \\
+        \hline
+        16/150 & Soft-DTW (uniform) & 74.3 & 200 \\
+        75/150 & Soft-DTW (uniform) & 75.1 & 200 \\
+        \hline
+        16/150 & Soft-DTW (last) & 76.2 & 200 \\
+        75/150 & Soft-DTW (last) & 77.0 & 200 \\
+        \hline
 
-\section{Weakly Aligned Data with Soft-DTW Loss}
-\label{section:weakly_aligned}
+    \end{tabular}
+    \end{center}
+    \caption{Results of the baseline model trained on strong target}
+\end{table}
+Table \ref{table:results_strong} summarizes the results of the baseline model trained on strong target with binary cross-entropy loss and the model trained on soft target with soft-DTW loss. Here we choose two different soft lengths, 16 and 75 to evaluate the effect of the reduction ratio on the performance. We also compare two different padding strategies, uniform and last element repetition.
+From the results, we can see that the model trained on strong target with binary cross-entropy loss achieves the best performance, with an F1-score of 78.5\%. This is expected, as the model has access to the most accurate and detailed information during training.
+For the model trained on soft target with soft-DTW loss, we observe that the performance is slightly lower than the baseline, with an F1-score of 74.3\% for soft length 16 and 75.1\% for soft length 75 using uniform padding strategy. However, when using the last element repetition padding strategy, the performance improves to 76.2\% for soft length 16 and 77.0\% for soft length 75. This suggests that the choice of padding strategy can have a significant impact on the performance of the model.
 
+
+\section{Comparison with CTC Loss}
+\label{section:comparison_ctc
+}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
 \label{chapter:conclusions}
