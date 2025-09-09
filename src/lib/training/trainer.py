@@ -20,8 +20,8 @@ class Trainer:
                  train_dl=None,
                  val_dl=None,
                  training_param=None,
-                 plot_e_matrix=False,
-                 plot_e_matrix_params=None,
+                 save_e_matrix_to=False,
+                 save_e_matrix_params={'save_path': 'e_matrix'},
                  plot_loader=None,
                  plot_loader_strong=None,
                  ):
@@ -46,29 +46,59 @@ class Trainer:
         self.__split_weak_batch = training_param['split_weak_batch'] if training_param is not None else False
         self.__epochs = training_param['max_epochs'] if training_param is not None else 100
 
-        self.__plot_e_matrix = plot_e_matrix
-        self.__plot_e_matrix_params = plot_e_matrix_params
+        self.__save_e_matrix_to = save_e_matrix_to
+        self.__save_e_matrix_params = save_e_matrix_params
         self.__plot_loader = plot_loader
         self.__plot_loader_strong = plot_loader_strong
 
         self._train_losses, self._val_losses = [], []
 
 
-    def _plot_e_matrix(self):
-        # WIP
-        x = self.plot_e_matrix_params["x"]
-        y = self.plot_e_matrix_params["y"]
-        lastChange = self.plot_e_matrix_params["lastChange"]
-        opt_paths = self.plot_e_matrix_params["opt_paths"]
-        
-        self._model.zero_grad()
-        
-        fig, ax = plt.subplots(4, 4, figsize=(20, 10))
-        ax = ax.flatten()
+    def __save_e_matrix(self):
+        """
+        Save E matrix plot for monitoring training progress
+        Perform the validation step and plot the E matrix
+        """
+        if not self.__plot_loader:
+            raise ValueError("Plot loaders must be provided for plotting E matrix.")
 
-        for b in range(y.shape[0]):
-            # forward pass
-            y_pred = self._model(x[b:b+1,:])
+        self.__model.eval()
+        x_weak, y_weak = next(iter(self.__plot_loader))
+        y_weak_pred = self.__model(x_weak.to(self.__device))
+        # Squeeze channel dimension
+        y_weak_pred = torch.squeeze(y_weak_pred, 1)
+        y_weak = torch.squeeze(y_weak, 1)
+        loss_ = self.__crit(y_weak_pred.to(self.__device), y_weak.to(self.__device))
+        loss_.mean().item()
+        loss_.backward()
+        e_matrix_soft = self.__crit.dtw_class.e_matrix.cpu().detach().numpy()
+
+        # Obtaining the ground truth alignment E matrix
+        if not self.__plot_loader_strong:
+            raise ValueError("Strong plot loader must be provided for obtaining ground truth E matrix.")
+        x_strong, y_strong = next(iter(self.__plot_loader_strong))
+        print(f"x_strong: {x_strong.shape}, y_strong: {y_strong.shape}")
+        y_strong = torch.squeeze(y_strong, 1)
+        # Artifically create a ground truth alignment based by checking where the soft labels are compared to the strong labels
+        e_matrix_strong = np.zeros((y_strong.shape[1], y_weak.shape[1]))
+        print(e_matrix_strong.shape)
+        marker = 0
+        for i in range(y_weak.shape[1]):
+            for j in range(marker, y_strong.shape[1]):
+                if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
+                    e_matrix_strong[j, i] = 1.0
+                    if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
+                        marker = j
+                        break           
+        plt.figure(figsize=(8, 6))
+        plt.imshow(e_matrix_soft[0,:,:], cmap='gray_r', aspect='auto')
+        plt.imshow(e_matrix_strong, cmap='Reds', alpha=0.8, aspect='auto')
+        plt.colorbar(label='Probability')
+        plt.xlabel('Soft Sequences')
+        plt.ylabel('Strong Sequences')
+        plt.title('E Matrix')
+        plt.savefig(os.path.join(self.__save_e_matrix_params['save_path'], f"e_matrix_epoch_{len(self._train_losses)}.png") )
+        plt.close()
 
     def __train_step(self,x, y):
         """
@@ -180,8 +210,8 @@ class Trainer:
 
             print(f'Epoch {e+1}/{self.__epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
-            if self.__plot_e_matrix:
-                self._plot_e_matrix()
+            if self.__save_e_matrix_to:
+                self.__save_e_matrix()
             
             if best_val_loss is None or val_loss < best_val_loss:
                 best_val_loss = val_loss

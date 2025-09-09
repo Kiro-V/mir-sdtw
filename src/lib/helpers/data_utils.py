@@ -85,14 +85,14 @@ def create_dataset(data_dict, ann_dict, song_dict, song_indices, dataset_params,
         song_indices: List of indices for the songs to include in the dataset.
         dataset_params: Dictionary containing parameters for the dataset (e.g., segment_length, soft_length). Note that if soft_length is not specified, it defaults to segment_length.
         dataset_description: Description of the dataset (e.g., 'train', 'test').
-        mode: Mode of dataset creation, either 'full' or 'soft'.
+        mode: Mode of dataset creation, either 'strong' or 'soft'.
         pad: Padding strategy, currently not used but can be extended in the future.
 
     Returns:
-        full_dataset: A concatenated dataset containing all segments created from the input data (One-hot encoded).
+        strong_dataset: A concatenated dataset containing all segments created from the input data (One-hot encoded).
     """
     assert pad in ['last', 'random', 'uniform', None], "Pad must be one of 'last', 'random', 'uniform', or None."
-    assert mode in ['full', 'soft'], "Mode must be either 'full' or 'soft' for dataset creation."
+    assert mode in ['strong', 'soft'], "Mode must be either 'strong' or 'soft' for dataset creation."
 
     all_datasets = []
     segment_length = dataset_params['segment_length']
@@ -131,12 +131,12 @@ def create_dataset(data_dict, ann_dict, song_dict, song_indices, dataset_params,
             input_seg = inputs_trimmed[start_idx:end_idx, :]
             label_seg = label_seq[:, start_idx:end_idx]
             
-            # Soft alignment of full segments
+            # Soft alignment of strong segments
             if mode == 'soft':
                 target_seg = [label_seg[:,i] for i in range(label_seg.shape[1]) if not np.array_equal(label_seg[:, i], label_seg[:, i-1]) or i == 0]
                 target_seg = __padding(target_seg, soft_length, pad_type=pad)
 
-            elif mode == 'full':
+            elif mode == 'strong':
                 target_seg = [label_seg[:, i] for i in range(label_seg.shape[1])]
 
             target_seg_len = torch.tensor([len(target_seg)], dtype=torch.int64)
@@ -151,9 +151,9 @@ def create_dataset(data_dict, ann_dict, song_dict, song_indices, dataset_params,
                     
         print(f'- {song_dict[s][0]} added to {dataset_description} set. Segments: {num_segments}')
         
-    full_dataset = torch.utils.data.ConcatDataset(all_datasets)
-    print(f'Total segments created for {dataset_description} dataset: {len(full_dataset)}')
-    return full_dataset
+    strong_dataset = torch.utils.data.ConcatDataset(all_datasets)
+    print(f'Total segments created for {dataset_description} dataset: {len(strong_dataset)}')
+    return strong_dataset
 
 """
     Utility functions for converting between one-hot encoded sequences and lists of indices.
