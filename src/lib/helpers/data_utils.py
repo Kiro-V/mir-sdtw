@@ -57,11 +57,16 @@ def __padding(target_seq, soft_length, pad_type):
     elif pad_type == 'uniform':
         repeat_count = soft_length // len(target_seq)
         remainder = soft_length % len(target_seq)
-        target_seq = target_seq * repeat_count
+        target_seq_new = [item for item in target_seq for _ in range(repeat_count)]
+        shift = 0
         if remainder > 0:
-            target_seq += target_seq[:remainder]
-        return target_seq
-    
+            remainder_index = np.arange(remainder)
+            remainder_index = [i * repeat_count for i in remainder_index]
+            for i in remainder_index:
+                target_seq_new.insert(i + shift, target_seq_new[i + shift])
+                shift += 1
+        return target_seq_new
+
     elif pad_type is None:
         return target_seq
     

@@ -272,42 +272,145 @@ despite much higher loss value for the model trained on soft target, which range
 
 \section{Training results}
 \label{section:baseline}
-\begin{table}[t]
-    \label{table:results_strong}
-    \begin{center}
-    \begin{tabular}{|c|c|c|c|}
-        \hline
-        Target/ Original Length & Loss Function & Test F1-score (\%)    & Epochs \\
-                                & (Pad Strategy) &                      & to best val. loss \\
-        \hline
-        150/150 & Binary Cross-entropy & 78.5 & 45 \\
-        \hline
-        16/150 & Soft-DTW (uniform) & 74.3 & 200 \\
-        75/150 & Soft-DTW (uniform) & 75.1 & 200 \\
-        \hline
-        16/150 & Soft-DTW (last) & 76.2 & 200 \\
-        75/150 & Soft-DTW (last) & 77.0 & 200 \\
-        \hline
 
-    \end{tabular}
+\begin{table}[t]
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+            \hline
+            Target/ Original Length & Loss Function & Test F1-score (\%)    & Epochs \\
+                                    & (Pad Strategy) &                      & to best val. loss \\
+            \hline
+            150/150 & Binary Cross-entropy & 0.765 & 50 \\
+            \hline
+            16/150 & Soft-DTW (uniform) & 0.761 & 200 \\
+            75/150 & Soft-DTW (uniform) & 0.761 & 200 \\
+            \hline
+            16/150 & Soft-DTW (last) & 0.761 & 200 \\
+            75/150 & Soft-DTW (last) & 0.681 & 200 \\
+            \hline
+        \end{tabular}
     \end{center}
     \caption{Results of the baseline model trained on strong target}
+    \label{table:results}
 \end{table}
-Table \ref{table:results_strong} summarizes the results of the baseline model trained on strong target with binary cross-entropy loss and the model trained on soft target with soft-DTW loss. Here we choose two different soft lengths, 16 and 75 to evaluate the effect of the reduction ratio on the performance. We also compare two different padding strategies, uniform and last element repetition.
-From the results, we can see that the model trained on strong target with binary cross-entropy loss achieves the best performance, with an F1-score of 78.5\%. This is expected, as the model has access to the most accurate and detailed information during training.
-For the model trained on soft target with soft-DTW loss, we observe that the performance is slightly lower than the baseline, with an F1-score of 74.3\% for soft length 16 and 75.1\% for soft length 75 using uniform padding strategy. However, when using the last element repetition padding strategy, the performance improves to 76.2\% for soft length 16 and 77.0\% for soft length 75. This suggests that the choice of padding strategy can have a significant impact on the performance of the model.
+Table \ref{table:results} summarizes the results of the baseline model trained on strong target with binary cross-entropy loss and the model trained on soft target with soft-DTW loss. Here we choose two different soft lengths, 16 and 75 to evaluate the effect of the reduction ratio on the performance. We also compare two different padding strategies, uniform and last element repetition.
 
+Overall, we see that sDTW loss is able to achieve comparable performance to the baseline model trained on strong target, with a slight decrease in F1-score of 0.4\%.
+This shows that sDTW is able to effectively learn from the soft target that contains less or noisy information,
+making it more robust to variations in the input sequence.
+Observing the results of different padding strategy, we find that last element repetition leads to similar performance as
+uniform padding for short soft lengths though it eventually degrades as the soft length increases. This is likely due to the repetition,
+which introduces a bias towards the last element, making it more prominent the longer the soft length. Figure \ref{figure:padding_strategy}
+shows different training target sequences with respective padding strategy and soft length. We can see that uniform padding distributes the repetitions evenly across all elements,
+while last element repetition creates a long tail of the last element. We speculate this would cause the model to overfit to the last element, as it becomes more frequent in the training data;
+therefore, it undermines the model's ability to generalize even with sDTW loss. Nonetheless, it also shows that sDTW are rather flexible, being able to compensate for small
+mistakes in annotation. And it would perform just as well for longer length had the padding was uniform.
 
-\section{Comparison with CTC Loss}
-\label{section:comparison_ctc
-}
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_uniform.png}
+        \caption{Uniform padding with soft length of 16.}
+        \label{figure:uniform_16}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_last.png}
+        \caption{Last element repetition with soft length of 16.}
+        \label{figure:last_16}
+    \end{subfigure}
+    \\
+    \vspace{0.5cm}
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_uniform.png}
+        \caption{Uniform padding with soft length of 75.}
+        \label{figure:uniform_75}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_last.png}
+        \caption{Last element repetition with soft length of 75.}
+        \label{figure:last_75}
+    \end{subfigure}
+    \caption{Example of different padding strategies with different soft lengths. The original strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions. The padded sequences have lengths of 16 and 75, respectively.}
+    \label{figure:padding_strategy}
+\end{figure}
+
+\section{Model Characteristics}
+\label{section:model_characteristics}
+In order to understand the behavior of the model trained with soft targets, we analyze the weight distribution of the model parameters. Specifically, we examine the distribution of the weights in the final layer of the model, which is responsible for making the predictions. We also observe the computed gradients during training to see how the model is learning from the data.
+
+Figure \ref{figure:weight_histogram} shows the weight distribution of the final layer over two chord classes. As mentioned before, we enable weight sharing across twelve chromas to counteract the small dataset size, hence the weight distribution appears similar to a transposition of a single chord. It is apparent that the final weight of the major chord class is more distinguished and vivid than that of the minor chord class, which is more faint, indicating less weight.
+This is mainly due to class imbalance presents in our dataset.
+Taking a closer look in Table \ref{table:chord_class_distribution}, we can see that the major chord class is more prevalent in the dataset, taking up 91\% of the total chord contained in strong target case.
+
+In the case of soft targets, we observe a less pronounced class imbalance, with the minor chords now taking up to 12\% of the total chord in soft target case. Further investigation with different soft lengths using uniform padding strategy shows that the class frequency fluctuates with respect to the soft length, albeit shows a more balanced distribution compared to the strong target case as shown in Table \ref{table:chord_class_distribution_soft}.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/results_soft/weight-gam03.png}
+    \caption{Weight distribution of the final layer over two chord classes. Higher values indicate larger weight.}
+    \label{figure:weight_histogram}
+\end{figure}
+
+\begin{table}
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|}
+            \hline
+            Chord Class & Number of Samples & Percentage        & Number of Samples & Percentage\\
+                        &   (strong)        &   (strong)        &   (soft length 16)          &   (soft length 16)\\
+            \hline
+            Major       & 5843    & 90.59\%  & 613 & 89.10\%\\
+            Minor       & 607     & 9.41\% & 75 & 10.90\%\\
+            No Chord    & 0       & 0\% & 0 & 0\%\\
+            \hline
+            \textbf{Total}       & 6450    & 100\% & 688 & 100\%\\
+            \hline
+        \end{tabular}
+
+    \end{center}
+    \caption{Distribution of chord classes in the dataset.}
+    \label{table:chord_class_distribution}
+\end{table}
+
+\begin{table}
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|c|}
+            \hline
+            \multirow{2}{*}{Chord Class} & \multicolumn{2}{c|}{Soft "0"} & \multicolumn{2}{c|}{Soft 16} & \multicolumn{2}{c|}{Soft 75}\\
+            \cline{2-7}
+                    & Samples & \% & Samples & \% & Samples & \%\\
+            \hline
+            Major       & 316    & 87.78\%  & 613 & 89.10\% & 2656 & 88.53\%\\
+            Minor       & 44     & 12.22\% & 75 & 10.90\% & 344 & 11.47\%\\
+            No Chord    & 0       & 0\% & 0 & 0\% & 0 & 0\%\\
+            \hline
+            \textbf{Total}       & 360    & 100\% & 688 & 100\% & 3000 & 100\%\\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Distribution of chord classes in the dataset with different soft lengths. "0" refers to no padding. Padding strategy is uniform repetition.}
+    \label{table:chord_class_distribution_soft}
+\end{table}
+
+Looking at the computed gradients during training shown in Figure \ref{figure:gradient_over_epochs_uniform} and \ref{figure:gardient over_epochs_repetition}, we can observe the probability distribution of the alignment path.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
 \label{chapter:conclusions}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this report, we have presented a comprehensive study on the use of soft targets for chord recognition in music audio. Our experiments demonstrate that leveraging soft targets can significantly improve the performance of chord recognition models, particularly in the presence of class imbalance.
 
+We have shown that the model trained with soft targets is able to better generalize to unseen data, as evidenced by the improved performance metrics on the validation set. The use of soft targets allows the model to learn from a richer set of annotations, capturing the nuances of chord progressions more effectively.
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Furthermore, our analysis of the model's behavior reveals interesting insights into the learning process. The weight distributions and gradient flows indicate that the model is able to focus on the most relevant features for chord recognition, leading to more robust predictions.
+
+Overall, our findings suggest that incorporating soft targets into the training process is a promising approach for addressing the challenges of chord recognition in music audio.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Appendix
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \cleardoublepage{}
