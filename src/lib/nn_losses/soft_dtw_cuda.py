@@ -117,6 +117,8 @@ class _SoftDTWCUDA(Function):
     "Developing a pattern discovery method in time series data and its GPU acceleration"
     """
 
+    e_matrix=None
+
     @staticmethod
     def forward(ctx, D, gamma, bandwidth):
         dev = D.device
@@ -171,6 +173,8 @@ class _SoftDTWCUDA(Function):
                                                             1.0 / gamma.item(), bandwidth.item(), N, M, n_passes,
                                                             cuda.as_cuda_array(E))
         E = E[:, 1:N + 1, 1:M + 1]
+
+        _SoftDTWCUDA.e_matrix = E 
         return grad_output.view(-1, 1, 1).expand_as(E) * E, None, None
 
 
@@ -244,6 +248,8 @@ class _SoftDTW(Function):
     CPU implementation based on https://github.com/Sleepwalking/pytorch-softdtw
     """
 
+    e_matrix = None
+
     @staticmethod
     def forward(ctx, D, gamma, bandwidth):
         dev = D.device
@@ -267,6 +273,7 @@ class _SoftDTW(Function):
         g_ = gamma.item()
         b_ = bandwidth.item()
         E = torch.Tensor(compute_softdtw_backward(D_, R_, g_, b_)).to(dev).type(dtype)
+        _SoftDTW.e_matrix = E
         return grad_output.view(-1, 1, 1).expand_as(E) * E, None, None
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -313,6 +320,7 @@ class SoftDTW(torch.nn.Module):
                 use_cuda = False
 
         # Finally, return the correct function
+        self.dtw_class = _SoftDTWCUDA if use_cuda else _SoftDTW
         return _SoftDTWCUDA.apply if use_cuda else _SoftDTW.apply
 
     @staticmethod
