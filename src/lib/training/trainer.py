@@ -21,7 +21,7 @@ class Trainer:
                  val_dl=None,
                  training_param=None,
                  save_e_matrix_to=False,
-                 save_e_matrix_params={'save_path': 'e_matrix'},
+                 save_e_matrix_params={'save_path': 'e_matrix', 'every_n_epochs': 1},
                  plot_loader=None,
                  plot_loader_strong=None,
                  ):
@@ -61,6 +61,17 @@ class Trainer:
         """
         if not self.__plot_loader:
             raise ValueError("Plot loaders must be provided for plotting E matrix.")
+        
+        if not self.__plot_loader_strong:
+            raise ValueError("Strong plot loader must be provided for obtaining ground truth E matrix.")
+        
+        if not os.path.exists(self.__save_e_matrix_params['save_path']):
+            os.makedirs(self.__save_e_matrix_params['save_path'])
+            logging.info(f"Created directory for E matrix plots: {self.__save_e_matrix_params['save_path']}")
+        
+        if not self.__save_e_matrix_params['every_n_epochs']:
+            # Default to saving every epoch
+            self.__save_e_matrix_params['every_n_epochs'] = 1
 
         self.__model.eval()
         x_weak, y_weak = next(iter(self.__plot_loader))
@@ -81,19 +92,24 @@ class Trainer:
         y_strong = torch.squeeze(y_strong, 1)
         # Artifically create a ground truth alignment based by checking where the soft labels are compared to the strong labels
         e_matrix_strong = np.zeros((y_strong.shape[1], y_weak.shape[1]))
-        print(e_matrix_strong.shape)
-        marker = 0
-        for i in range(y_weak.shape[1]):
-            for j in range(marker, y_strong.shape[1]):
+        e_matrix_strong[0,0] = 1.0
+        e_matrix_strong[-1,-1] = 1.0
+        marker = 1
+        for i in range(1,y_weak.shape[1]-1):
+            for j in range(marker, y_strong.shape[1]-1):
                 if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
                     e_matrix_strong[j, i] = 1.0
                     if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
                         marker = j
-                        break           
+                        break
+        e_plot_strong = e_matrix_strong.argmax(axis=0)
+        e_plot_soft = e_matrix_soft[0,:,:].argmax(axis=0)
         plt.figure(figsize=(8, 6))
         plt.imshow(e_matrix_soft[0,:,:], cmap='gray_r', aspect='auto')
-        plt.imshow(e_matrix_strong, cmap='Reds', alpha=0.8, aspect='auto')
+        plt.plot(e_plot_strong, color='red', alpha=0.8, marker='o')
+        plt.plot(e_plot_soft, color='orange', alpha=0.8, marker='o')
         plt.colorbar(label='Probability')
+        plt.legend(['Ground Truth Alignment', 'Predicted Alignment'])
         plt.xlabel('Soft Sequences')
         plt.ylabel('Strong Sequences')
         plt.title('E Matrix')
@@ -210,7 +226,7 @@ class Trainer:
 
             print(f'Epoch {e+1}/{self.__epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
-            if self.__save_e_matrix_to:
+            if self.__save_e_matrix_to and e % self.__save_e_matrix_params['every_n_epochs'] == 0:
                 self.__save_e_matrix()
             
             if best_val_loss is None or val_loss < best_val_loss:
