@@ -35,7 +35,16 @@ However, it introduces challenges when training with weakly aligned datasets. In
 The main objective is to integrate soft-DTW as a loss function in the training process of a template-based chord recognition model.
 The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data.
 The dDTW loss function will then be used to train the model with the distorted dataset. The results will be compared with those obtained using the original dataset and the Connectionist Temporal Classification (CTC) loss function.
-Additional tasks may include experimenting and evaluating the performance of sDTW with different stablizing strategies.
+\begin{center}
+    \begin{minipage}{0.48\textwidth} 
+        \begin{figure}[H]
+            \includegraphics[scale=0.35]{figures/alignment/e_matrix_75_last_epoch_161.png}
+            \caption{Example of the alignment cost matrix computed by the soft-DTW algorithm between a prediction sequence and a target sequence. The red line indicates the optimal warping path. The orange line is the predicted path.}
+        \end{figure}
+    \end{minipage}
+\end{center}
+
+
 \mainmatter{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Table of Contents
@@ -192,8 +201,7 @@ In this section, we present the objectives of our experiment, the dataset used f
 \section{Dataset}
 \label{section:dataset}
 For the experiment, we use the Beatles dataset retrieved from Isophonics \cite{HarteSAG05_ChordRecognition_ISMIR}, consisting of four audio recordings with respective annotations. 
-Since the original annotations have more than 24 chord types, which would make the network too complex and beyond the scope of this project.
-We therefore consider the simplified version of such annotations, which reduced the number of chord types to only 24 (12 chromas with their respective major or minor variant)\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+Since the original annotations have more than 24 chord types, which would make the network too complex and beyond the scope of this project, we therefore consider the simplified version of such annotations, which reduced the number of chord types to only 24 (12 chromas with their respective major or minor variant)\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
 We split the dataset into training, validation, and test sets. For test set, a short segment of Let It Be is used,
 while the rest of the dataset is split into 3:1 ratio for training and validation.
 
@@ -209,8 +217,41 @@ In case of soft alignment, we remove the adjacent repetitions in the sequence, e
     \label{figure:soft_alignment}
 \end{figure}
 
-However, this method introduce a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences repeating elements until they reach a desired length, or "soft length".
-After some experiments, we found that a soft length of 16 covers all of possible reduced sequences while keeping the reduction ratio high. For which elements are repeated, we derived several strategies, either uniformly over all elements, or only repeat the last element until reaching the desired length.
+However, this method introduce a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences repeating elements until they reach a desired length, or "soft length". We propose two padding strategies: uniform and last element repetition, as illustrated in Figure \ref{figure:padding_strategies}. We define uniform padding as to repeating all elements in the sequence or "stretching" the sequence to the desired length, whereas last element only repeats the last element until the desired length is reached.
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_uniform.png}
+        \caption{Uniform padding with soft length of 16.}
+        \label{figure:uniform_16}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_last.png}
+        \caption{Last element repetition with soft length of 16.}
+        \label{figure:last_16}
+    \end{subfigure}
+    \\
+    \vspace{0.5cm}
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_uniform.png}
+        \caption{Uniform padding with soft length of 75.}
+        \label{figure:uniform_75}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_last.png}
+        \caption{Last element repetition with soft length of 75.}
+        \label{figure:last_75}
+    \end{subfigure}
+    \caption{Example of different padding strategies with different soft lengths. The original strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions. The padded sequences have lengths of 16 and 75, respectively.}
+    \label{figure:padding_strategies}
+\end{figure}
+After some experiments, we found that a soft length of 16 covers all of possible reduced sequences while keeping the reduction ratio high.
 
 
 \section{Model Architecture}
@@ -221,7 +262,7 @@ This network consists of a single layer that acts as the chord template to predi
 The network has a total of 25 trainable parameters.
 Table \ref{table:arch} illustrate the components of the architecture with their respective input and output dimensions.
 
-\begin{table}[t]
+\begin{table}[tb]
     \begin{center}
     \begin{tabular}{|c|c|c|c|}
         \hline
@@ -233,25 +274,27 @@ Table \ref{table:arch} illustrate the components of the architecture with their 
         softmax & (24, 150) & (24, 150) & 0 \\
         \hline
     \end{tabular}
-        \caption{Architecture of the chord recognition network. T is the number of time frames.}
+        \caption{Architecture of the chord recognition network. Input sequence length is 150 samples.}
         \label{table:arch}
     \end{center}
 \end{table}
 
-During the training process, we use Adam Optimizer \cite{Kingma2017_AdamMethodStochasticOptimization} with a a learning rate $\alpha = 0.1$ with $\beta_1 = 0.9$, $\beta_2 = 0.999$ and $\epsilon = 10^{-8}$. Since the dataset is small, we use a batch size of 5 and enable share weight, where the weight of chords in the same class (major or minor) are shared. The model is trained for 200 epochs, and the best model is selected based on the validation loss.
-
-
+During the training process, we use Adam Optimizer \cite{Kingma2017_AdamMethodStochasticOptimization} with a a learning rate $\alpha = 0.1$ with $\beta_1 = 0.9$, $\beta_2 = 0.999$ and $\epsilon = 10^{-8}$. Since the dataset is small of only 43 training segments, we use a single batch of 43 targets train the model over 200 epochs for soft targets and 50 epochs for strong targets. We also enables weight sharing, where the weights of the chords in the same chord class (major or minor) are share, so that the model can compensate for the chords that are underrepresented in either chord class. We conduct the training process on Dell Inc. XPS 15 9570 with Intel core i7-8750G, 16 Gb RAM with Ubuntu 24.04.2 LTS Operating System.
 
 \chapter{Evaluation}
 \label{chapter:evaluation}
-In this section, we evaluate the performance of the aforementioned soft-DTW loss function against the baseline model trained with binary cross-entropy loss for the task of chord recognition. For each case, we train with the respective dataset, either strong or soft targets, and calculate the F1 measure on the test set.
+In this section, we evaluate the performance of the aforementioned soft-DTW loss function against the baseline model trained with binary cross-entropy loss for the task of chord recognition. We train the each model 5 times to observe any randomness present in the training process, to which the model consistently achieves similar performance metrics accross multiple runs.
+We train the models on a total of 5 cases, with a baseline case of strong taget and 4 soft cases with 2 soft length of 16 and 75, each with 2 padding strategies (uniform and last element repetition).
 
-\section{Training with SDTW loss}
-\label{section:training_sdtw}
+\section{Training Curve}
+\label{section:training_curve}
 Figure \ref{figure:train_curves} shows the training and validation loss curves of the models trained on strong and soft targets. We can see overall the loss decreases over time, indicating that the models are learning from the data,
-despite much higher loss value for the model trained on soft target, which ranges from 130 to 70, compared to 2.5 to 0.75 for the model trained on strong target.This is expected, as the soft target contains less information, making it more difficult for the model to learn.
+despite much higher loss value for the model trained on soft target, which ranges from 130 to 70, compared to 2.5 to 0.75 for the model trained on strong target. This is expected, as the soft target contains less information, making it more difficult for the model to learn. In all cases, we observe the overfitting behaviour after one-third of the training processes (epoch 20 for strong target, epoch 60 for soft targets), where the validation loss starts to increase while the training loss continues to decrease.
 
-\begin{figure}[t]
+Figure \ref{figure:compare_curve_soft} compares the training curves among different soft target configuration. Interestingly, three of them have similar curve shapes, indicating that the model's performance is relatively stable across different configurations. One outlier is the last element repetition case of soft length 75, which different flow in validation loss since even the first several epochs. Furthermore, we can see that longer padding length tends to facilitate overfitting as evidenced by the discrepency of the loss between training and validation in case of soft length 75 compared to soft length 16, both with uniform padding. Meanwhile, in soft length 16 case, higher difference is shown in last element repetition compared to uniform padding.
+This means that the choice of padding strategy and soft target length can from slightly to significantly impact the model's learning process, with certain configurations being more prone to overfitting than others. From this results, we see that uniform padding combined with shorter soft length results in the best performance.
+
+\begin{figure}[tb]
     \centering
     \begin{subfigure}{0.48\textwidth}
         \centering
@@ -269,6 +312,41 @@ despite much higher loss value for the model trained on soft target, which range
     \caption{Training and validation loss curves of the models trained on strong and soft targets.}
     \label{figure:train_curves}
 \end{figure}
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve16-uniform-gam03.png}
+        \caption{Uniform padding with soft length of 16.}
+        \label{figure:uniform_16_curve}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve16-last-gam03.png}
+        \caption{Last element repetition with soft length of 16.}
+        \label{figure:last_16_curve}
+    \end{subfigure}
+    \\
+    \vspace{0.5cm}
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve75-uniform-gam03.png}
+        \caption{Uniform padding with soft length of 75.}
+        \label{figure:uniform_75_curve}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve75-last-gam03.png}
+        \caption{Last element repetition with soft length of 75.}
+        \label{figure:last_75_curve}
+    \end{subfigure}
+    \caption{Comparison between different soft target configuration}
+    \label{figure:compare_curve_soft}
+\end{figure}
+
 
 \section{Training results}
 \label{section:baseline}
@@ -306,52 +384,21 @@ while last element repetition creates a long tail of the last element. We specul
 therefore, it undermines the model's ability to generalize even with sDTW loss. Nonetheless, it also shows that sDTW are rather flexible, being able to compensate for small
 mistakes in annotation. And it would perform just as well for longer length had the padding was uniform.
 
-\begin{figure}
-    \centering
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/data_soft16_uniform.png}
-        \caption{Uniform padding with soft length of 16.}
-        \label{figure:uniform_16}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/data_soft16_last.png}
-        \caption{Last element repetition with soft length of 16.}
-        \label{figure:last_16}
-    \end{subfigure}
-    \\
-    \vspace{0.5cm}
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/data_soft75_uniform.png}
-        \caption{Uniform padding with soft length of 75.}
-        \label{figure:uniform_75}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/data_soft75_last.png}
-        \caption{Last element repetition with soft length of 75.}
-        \label{figure:last_75}
-    \end{subfigure}
-    \caption{Example of different padding strategies with different soft lengths. The original strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions. The padded sequences have lengths of 16 and 75, respectively.}
-    \label{figure:padding_strategy}
-\end{figure}
 
-\section{Model Characteristics}
+
+\section{Model Template Weight}
 \label{section:model_characteristics}
-In order to understand the behavior of the model trained with soft targets, we analyze the weight distribution of the model parameters. Specifically, we examine the distribution of the weights in the final layer of the model, which is responsible for making the predictions. We also observe the computed gradients during training to see how the model is learning from the data.
+In order to understand the behavior of the model trained with soft targets, we analyze the weight distribution of the model parameters. Specifically, we examine the distribution of the weights in the final layer of the model, which is responsible for making the predictions.
 
 Figure \ref{figure:weight_histogram} shows the weight distribution of the final layer over two chord classes. As mentioned before, we enable weight sharing across twelve chromas to counteract the small dataset size, hence the weight distribution appears similar to a transposition of a single chord. It is apparent that the final weight of the major chord class is more distinguished and vivid than that of the minor chord class, which is more faint, indicating less weight.
 This is mainly due to class imbalance presents in our dataset.
 Taking a closer look in Table \ref{table:chord_class_distribution}, we can see that the major chord class is more prevalent in the dataset, taking up 91\% of the total chord contained in strong target case.
 
-In the case of soft targets, we observe a less pronounced class imbalance, with the minor chords now taking up to 12\% of the total chord in soft target case. Further investigation with different soft lengths using uniform padding strategy shows that the class frequency fluctuates with respect to the soft length, albeit shows a more balanced distribution compared to the strong target case as shown in Table \ref{table:chord_class_distribution_soft}.
+In the case of soft targets, we observe a less pronounced class imbalance, with the minor chords now taking up to 12\% of the total chord in soft target case. Further investigation with different soft lengths using uniform padding strategy shows that the class frequency fluctuates with respect to the soft length, albeit shows a more balanced distribution compared to the strong target case as shown in Table \ref{table:chord_class_distribution_soft}. In conclusion, repetition reduction for creating soft target may have a small to noticable effect on class balance, but in general, the model have a bias toward major chords due to minor chords being underrepresented in the dataset.
+
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\textwidth]{figures/results_soft/weight-gam03.png}
+    \includegraphics[scale=0.5]{figures/results_soft/weight-gam03.png}
     \caption{Weight distribution of the final layer over two chord classes. Higher values indicate larger weight.}
     \label{figure:weight_histogram}
 \end{figure}
@@ -396,19 +443,53 @@ In the case of soft targets, we observe a less pronounced class imbalance, with 
     \label{table:chord_class_distribution_soft}
 \end{table}
 
-Looking at the computed gradients during training shown in Figure \ref{figure:gradient_over_epochs_uniform} and \ref{figure:gardient over_epochs_repetition}, we can observe the probability distribution of the alignment path.
+\newpage \pagebreak \cleardoublepage
 
+\section{Gradient Analysis}
+\label{section:gradient_analysis}
+
+Looking at the computed gradients during training, as shown in Figure \ref{figure:gradient_over_epochs_uniform}, with different soft lengths and uniform padding, we can observe the change in probability distribution of the alignment path. We notice that at first the gradient assumes a diagonal prior to the alignment path (at epoch 1), indicating that the model is initially uncertain about the alignment. However as training progresses, the gradient shifts towards the ground truth, albeit not perfectly. This shows that the model is capable of learning the alignment in case of soft targets, despite the lack of precise temporal information. Moreover, we inspect the gradient with more extreme alignment paths such as with last element repetition, shown in Figure \ref{figure:gradient_over_epochs_repetition}. In such cases, the gradient behaviour becomes more pronounced, as it quickly converges to the ground truth alignment from initial diagonal prior. Despite these cases cause a large drop in model accuracy, we can see the flexibility of sDTW loss, being able to adapt to different alignment paths.
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.35]{figures/alignment/e_matrix_16_uniform_epoch_1.png}
+        \caption{Epoch 1}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.35]{figures/alignment/e_matrix_16_uniform_epoch_161.png}
+        \caption{Epoch 161}
+    \end{subfigure}
+    \caption{Gradient over epochs with soft length 16 and uniform padding.}
+    \label{figure:gradient_over_epochs_uniform}
+\end{figure}
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.35]{figures/alignment/e_matrix_16_last_epoch_1.png}
+        \caption{Epoch 1}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.35]{figures/alignment/e_matrix_16_last_epoch_161.png}
+        \caption{Epoch 161}
+    \end{subfigure}
+    \caption{Gradient over epochs with soft length 16 and last element repetition padding.}
+    \label{figure:gradient_over_epochs_repetition}
+\end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusions}
 \label{chapter:conclusions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-In this report, we have presented a comprehensive study on the use of soft targets for chord recognition in music audio. Our experiments demonstrate that leveraging soft targets can significantly improve the performance of chord recognition models, particularly in the presence of class imbalance.
+In this report, we have presented a comprehensive study on the use of soft dynamic-time-warping loss for chord recognition in music information retrieval.
+Despite the simplicity of the network architecture, the results indicate that the model is capable of effectively predicting the unseen data, even if the training data has missing or imprecise temporal information, with a small degree of degradation on performance.
+Our experiments provide a method to work around the batching limitations when dealing with variable-length sequences, and we have shown that the model trained with soft targets is able to generalize to unseen data, as evidenced by the improved performance metrics on the validation set. The use of soft targets and sDTW loss allows the model to learn from a richer set of annotations, which may or may not contain imperfections regarding the timing and duration of musical events.
 
-We have shown that the model trained with soft targets is able to better generalize to unseen data, as evidenced by the improved performance metrics on the validation set. The use of soft targets allows the model to learn from a richer set of annotations, capturing the nuances of chord progressions more effectively.
+Furthermore, our analysis of the model's behavior reveals interesting insights into the learning process. The gradient flow during training shows that sDTW is able to effectively find the time warping alignment between the input and target sequences, mitigating the impact of misalignments and improving the overall robustness of the model.
 
-Furthermore, our analysis of the model's behavior reveals interesting insights into the learning process. The weight distributions and gradient flows indicate that the model is able to focus on the most relevant features for chord recognition, leading to more robust predictions.
+Several limitations of our approach should be acknowledged. First, the small and imbalance data set used for the experiment may not fully capture the diversity of musical styles and chord progression. Most notable is the lack of representation of minor chords, which causes the model to be less effective in recognizing these chords. Second is the method of providing soft targets. The current approach starts from strong targets and reduces the repetitions in order to emulate misalignments, but it may not fully capture the nuances of real-world annotations. Finally, the proposed method to solve variable-length caused by repetition reduction introduces additional complexity during data preprocessing step, and the choice of padding strategy can significantly impact the model's performance.
 
-Overall, our findings suggest that incorporating soft targets into the training process is a promising approach for addressing the challenges of chord recognition in music audio.
+In conclusion, integrating sDTW into deep neural network model extends the model's capability to handle misalignment, hence improve its stability and robustness.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Appendix
