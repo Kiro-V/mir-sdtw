@@ -90,29 +90,16 @@ class Trainer:
         x_strong, y_strong = next(iter(self.__plot_loader_strong))
         print(f"x_strong: {x_strong.shape}, y_strong: {y_strong.shape}")
         y_strong = torch.squeeze(y_strong, 1)
-        # Artifically create a ground truth alignment based by checking where the soft labels are compared to the strong labels
-        e_matrix_strong = np.zeros((y_strong.shape[1], y_weak.shape[1]))
-        e_matrix_strong[0,0] = 1.0
-        e_matrix_strong[-1,-1] = 1.0
-        marker = 1
-        for i in range(1,y_weak.shape[1]-1):
-            for j in range(marker, y_strong.shape[1]-1):
-                if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
-                    e_matrix_strong[j, i] = 1.0
-                    if y_strong[0, j].argmax().item() == y_weak[0, i].argmax().item():
-                        marker = j
-                        break
-        e_plot_strong = e_matrix_strong.argmax(axis=0)
-        e_plot_soft = e_matrix_soft[0,:,:].argmax(axis=0)
-        plt.figure(figsize=(8, 6))
-        plt.imshow(e_matrix_soft[0,:,:], cmap='gray_r', aspect='auto')
-        plt.plot(e_plot_strong, color='red', alpha=0.8, marker='o')
-        plt.plot(e_plot_soft, color='orange', alpha=0.8, marker='o')
+        # Ground truth region alignment matrix
+        e_matrix_strong = np.dot(y_strong[0,:,:].cpu().numpy(), torch.permute(y_weak[0,:,:], (1, 0)).cpu().numpy())
+        plt.figure(figsize=(10, 6))
+        plt.imshow(e_matrix_soft[0,:,:].T, cmap='gray_r', origin='lower', aspect='auto')
         plt.colorbar(label='Probability')
+        plt.imshow(e_matrix_strong.T, cmap='Reds', origin='lower', alpha=0.25, aspect='auto')
         plt.legend(['Ground Truth Alignment', 'Predicted Alignment'])
-        plt.xlabel('Soft Sequences')
-        plt.ylabel('Strong Sequences')
-        plt.title('E Matrix')
+        plt.ylabel('Soft Sequences', fontsize=18)
+        plt.xlabel('Strong Sequences', fontsize=18)
+        plt.title('E Matrix', fontsize=18)
         plt.savefig(os.path.join(self.__save_e_matrix_params['save_path'], f"e_matrix_epoch_{len(self._train_losses)}.png") )
         plt.close()
 

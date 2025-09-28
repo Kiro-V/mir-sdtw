@@ -35,14 +35,14 @@ However, it introduces challenges when training with weakly aligned datasets. In
 The main objective is to integrate soft-DTW as a loss function in the training process of a template-based chord recognition model.
 The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data.
 The dDTW loss function will then be used to train the model with the distorted dataset. The results will be compared with those obtained using the original dataset and the Connectionist Temporal Classification (CTC) loss function.
-\begin{center}
-    \begin{minipage}{0.48\textwidth} 
-        \begin{figure}[H]
-            \includegraphics[scale=0.35]{figures/alignment/e_matrix_75_last_epoch_161.png}
-            \caption{Example of the alignment cost matrix computed by the soft-DTW algorithm between a prediction sequence and a target sequence. The red line indicates the optimal warping path. The orange line is the predicted path.}
-        \end{figure}
-    \end{minipage}
-\end{center}
+% \begin{center}
+%     \begin{minipage}{0.48\textwidth} 
+%         \begin{figure}[H]
+%             \includegraphics[scale=0.35]{figures/alignment/e_matrix_75_last_epoch_161.png}
+%             \caption{Example of the alignment cost matrix computed by the soft-DTW algorithm between a prediction sequence and a target sequence. The red line indicates the optimal warping path. The orange line is the predicted path.}
+%         \end{figure}
+%     \end{minipage}
+% \end{center}
 
 
 \mainmatter{}
@@ -213,7 +213,7 @@ In case of soft alignment, we remove the adjacent repetitions in the sequence, e
     \\
     \vspace{0.5cm}
     \includegraphics[scale=0.5]{figures/data_soft.png}
-    \caption{Example of strong and soft target sequences. The strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions.}
+    \caption{Example of strong and soft target sequences. The strong target sequence has a length of 150, while the soft target sequence has a length of 6 after removing adjacent repetitions.}
     \label{figure:soft_alignment}
 \end{figure}
 
@@ -291,8 +291,8 @@ We train the models on a total of 5 cases, with a baseline case of strong taget 
 Figure \ref{figure:train_curves} shows the training and validation loss curves of the models trained on strong and soft targets. We can see overall the loss decreases over time, indicating that the models are learning from the data,
 despite much higher loss value for the model trained on soft target, which ranges from 130 to 70, compared to 2.5 to 0.75 for the model trained on strong target. This is expected, as the soft target contains less information, making it more difficult for the model to learn. In all cases, we observe the overfitting behaviour after one-third of the training processes (epoch 20 for strong target, epoch 60 for soft targets), where the validation loss starts to increase while the training loss continues to decrease.
 
-Figure \ref{figure:compare_curve_soft} compares the training curves among different soft target configuration. Interestingly, three of them have similar curve shapes, indicating that the model's performance is relatively stable across different configurations. One outlier is the last element repetition case of soft length 75, which different flow in validation loss since even the first several epochs. Furthermore, we can see that longer padding length tends to facilitate overfitting as evidenced by the discrepency of the loss between training and validation in case of soft length 75 compared to soft length 16, both with uniform padding. Meanwhile, in soft length 16 case, higher difference is shown in last element repetition compared to uniform padding.
-This means that the choice of padding strategy and soft target length can from slightly to significantly impact the model's learning process, with certain configurations being more prone to overfitting than others. From this results, we see that uniform padding combined with shorter soft length results in the best performance.
+% Figure \ref{figure:compare_           curve_soft} compares the training curves among different soft target configuration. Interestingly, three of them have similar curve shapes, indicating that the model's performance is relatively stable across different configurations. One outlier is the last element repetition case of soft length 75, which different flow in validation loss since even the first several epochs. Furthermore, we can see that longer padding length tends to facilitate overfitting as evidenced by the discrepency of the loss between training and validation in case of soft length 75 compared to soft length 16, both with uniform padding. Meanwhile, in soft length 16 case, higher difference is shown in last element repetition compared to uniform padding.
+% This means that the choice of padding strategy and soft target length can from slightly to significantly impact the model's learning process, with certain configurations being more prone to overfitting than others. From this results, we see that uniform padding combined with shorter soft length results in the best performance.
 
 \begin{figure}[tb]
     \centering
@@ -311,40 +311,6 @@ This means that the choice of padding strategy and soft target length can from s
     \end{subfigure}
     \caption{Training and validation loss curves of the models trained on strong and soft targets.}
     \label{figure:train_curves}
-\end{figure}
-
-\begin{figure}[tb]
-    \centering
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/results_soft/learncurve16-uniform-gam03.png}
-        \caption{Uniform padding with soft length of 16.}
-        \label{figure:uniform_16_curve}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/results_soft/learncurve16-last-gam03.png}
-        \caption{Last element repetition with soft length of 16.}
-        \label{figure:last_16_curve}
-    \end{subfigure}
-    \\
-    \vspace{0.5cm}
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/results_soft/learncurve75-uniform-gam03.png}
-        \caption{Uniform padding with soft length of 75.}
-        \label{figure:uniform_75_curve}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[scale=0.5]{figures/results_soft/learncurve75-last-gam03.png}
-        \caption{Last element repetition with soft length of 75.}
-        \label{figure:last_75_curve}
-    \end{subfigure}
-    \caption{Comparison between different soft target configuration}
-    \label{figure:compare_curve_soft}
 \end{figure}
 
 
@@ -378,72 +344,69 @@ This shows that sDTW is able to effectively learn from the soft target that cont
 making it more robust to variations in the input sequence.
 Observing the results of different padding strategy, we find that last element repetition leads to similar performance as
 uniform padding for short soft lengths though it eventually degrades as the soft length increases. This is likely due to the repetition,
-which introduces a bias towards the last element, making it more prominent the longer the soft length. Figure \ref{figure:padding_strategy}
-shows different training target sequences with respective padding strategy and soft length. We can see that uniform padding distributes the repetitions evenly across all elements,
-while last element repetition creates a long tail of the last element. We speculate this would cause the model to overfit to the last element, as it becomes more frequent in the training data;
-therefore, it undermines the model's ability to generalize even with sDTW loss. Nonetheless, it also shows that sDTW are rather flexible, being able to compensate for small
+which introduces a bias towards the last element, as demonstrated in Figure \ref{figure:padding_strategies}. Nonetheless, it also shows that sDTW are rather flexible, being able to compensate for small
 mistakes in annotation. And it would perform just as well for longer length had the padding was uniform.
 
 
 
-\section{Model Template Weight}
-\label{section:model_characteristics}
-In order to understand the behavior of the model trained with soft targets, we analyze the weight distribution of the model parameters. Specifically, we examine the distribution of the weights in the final layer of the model, which is responsible for making the predictions.
+% \section{Model Template Weight}
+% \label{section:model_characteristics}
+% In order to understand the behavior of the model trained with soft targets, we analyze the weight distribution of the model parameters. Specifically, we examine the distribution of the weights in the final layer of the model, which is responsible for making the predictions.
 
-Figure \ref{figure:weight_histogram} shows the weight distribution of the final layer over two chord classes. As mentioned before, we enable weight sharing across twelve chromas to counteract the small dataset size, hence the weight distribution appears similar to a transposition of a single chord. It is apparent that the final weight of the major chord class is more distinguished and vivid than that of the minor chord class, which is more faint, indicating less weight.
-This is mainly due to class imbalance presents in our dataset.
-Taking a closer look in Table \ref{table:chord_class_distribution}, we can see that the major chord class is more prevalent in the dataset, taking up 91\% of the total chord contained in strong target case.
+% Figure \ref{figure:weight_histogram} shows the weight distribution of the final layer over two chord classes. As mentioned before, we enable weight sharing across twelve chromas to counteract the small dataset size, hence the weight distribution appears similar to a transposition of a single chord. It is apparent that the final weight of the major chord class is more distinguished and vivid than that of the minor chord class, which is more faint, indicating less weight.
+% This is mainly due to class imbalance presents in our dataset.
+% Taking a closer look in Table \ref{table:chord_class_distribution}, we can see that the major chord class is more prevalent in the dataset, taking up 91\% of the total chord contained in strong target case.
 
-In the case of soft targets, we observe a less pronounced class imbalance, with the minor chords now taking up to 12\% of the total chord in soft target case. Further investigation with different soft lengths using uniform padding strategy shows that the class frequency fluctuates with respect to the soft length, albeit shows a more balanced distribution compared to the strong target case as shown in Table \ref{table:chord_class_distribution_soft}. In conclusion, repetition reduction for creating soft target may have a small to noticable effect on class balance, but in general, the model have a bias toward major chords due to minor chords being underrepresented in the dataset.
+% In the case of soft targets, we observe a less pronounced class imbalance, with the minor chords now taking up to 12\% of the total chord in soft target case. Further investigation with different soft lengths using uniform padding strategy shows that the class frequency fluctuates with respect to the soft length, albeit shows a more balanced distribution compared to the strong target case as shown in Table \ref{table:chord_class_distribution_soft}. In conclusion, repetition reduction for creating soft target may have a small to noticable effect on class balance, but in general, the model have a bias toward major chords due to minor chords being underrepresented in the dataset.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[scale=0.5]{figures/results_soft/weight-gam03.png}
-    \caption{Weight distribution of the final layer over two chord classes. Higher values indicate larger weight.}
-    \label{figure:weight_histogram}
-\end{figure}
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[scale=0.5]{figures/results_soft/weight-gam03.png}
+%     \caption{Weight distribution of the final layer over two chord classes. Higher values indicate larger weight.}
+%     \label{figure:weight_histogram}
+% \end{figure}
 
-\begin{table}
-    \begin{center}
-        \begin{tabular}{|c|c|c|c|c|c|}
-            \hline
-            Chord Class & Number of Samples & Percentage        & Number of Samples & Percentage\\
-                        &   (strong)        &   (strong)        &   (soft length 16)          &   (soft length 16)\\
-            \hline
-            Major       & 5843    & 90.59\%  & 613 & 89.10\%\\
-            Minor       & 607     & 9.41\% & 75 & 10.90\%\\
-            No Chord    & 0       & 0\% & 0 & 0\%\\
-            \hline
-            \textbf{Total}       & 6450    & 100\% & 688 & 100\%\\
-            \hline
-        \end{tabular}
+% \begin{table}
+%     \begin{center}
+%         \begin{tabular}{|c|c|c|c|c|c|}
+%             \hline
+%             Chord Class & Number of Samples & Percentage        & Number of Samples & Percentage\\
+%                         &   (strong)        &   (strong)        &   (soft length 16)          &   (soft length 16)\\
+%             \hline
+%             Major       & 5843    & 90.59\%  & 613 & 89.10\%\\
+%             Minor       & 607     & 9.41\% & 75 & 10.90\%\\
+%             No Chord    & 0       & 0\% & 0 & 0\%\\
+%             \hline
+%             \textbf{Total}       & 6450    & 100\% & 688 & 100\%\\
+%             \hline
+%         \end{tabular}
 
-    \end{center}
-    \caption{Distribution of chord classes in the dataset.}
-    \label{table:chord_class_distribution}
-\end{table}
+%     \end{center}
+%     \caption{Distribution of chord classes in the dataset.}
+%     \label{table:chord_class_distribution}
+% \end{table}
 
-\begin{table}
-    \begin{center}
-        \begin{tabular}{|c|c|c|c|c|c|c|}
-            \hline
-            \multirow{2}{*}{Chord Class} & \multicolumn{2}{c|}{Soft "0"} & \multicolumn{2}{c|}{Soft 16} & \multicolumn{2}{c|}{Soft 75}\\
-            \cline{2-7}
-                    & Samples & \% & Samples & \% & Samples & \%\\
-            \hline
-            Major       & 316    & 87.78\%  & 613 & 89.10\% & 2656 & 88.53\%\\
-            Minor       & 44     & 12.22\% & 75 & 10.90\% & 344 & 11.47\%\\
-            No Chord    & 0       & 0\% & 0 & 0\% & 0 & 0\%\\
-            \hline
-            \textbf{Total}       & 360    & 100\% & 688 & 100\% & 3000 & 100\%\\
-            \hline
-        \end{tabular}
-    \end{center}
-    \caption{Distribution of chord classes in the dataset with different soft lengths. "0" refers to no padding. Padding strategy is uniform repetition.}
-    \label{table:chord_class_distribution_soft}
-\end{table}
+% \begin{table}
+%     \begin{center}
+%         \begin{tabular}{|c|c|c|c|c|c|c|}
+%             \hline
+%             \multirow{2}{*}{Chord Class} & \multicolumn{2}{c|}{Soft "0"} & \multicolumn{2}{c|}{Soft 16} & \multicolumn{2}{c|}{Soft 75}\\
+%             \cline{2-7}
+%                     & Samples & \% & Samples & \% & Samples & \%\\
+%             \hline
+%             Major       & 316    & 87.78\%  & 613 & 89.10\% & 2656 & 88.53\%\\
+%             Minor       & 44     & 12.22\% & 75 & 10.90\% & 344 & 11.47\%\\
+%             No Chord    & 0       & 0\% & 0 & 0\% & 0 & 0\%\\
+%             \hline
+%             \textbf{Total}       & 360    & 100\% & 688 & 100\% & 3000 & 100\%\\
+%             \hline
+%         \end{tabular}
+%     \end{center}
+%     \caption{Distribution of chord classes in the dataset with different soft lengths. "0" refers to no padding. Padding strategy is uniform repetition.}
+%     \label{table:chord_class_distribution_soft}
+% \end{table}
 
-\newpage \pagebreak \cleardoublepage
+% \newpage \pagebreak \cleardoublepage
 
 \section{Gradient Analysis}
 \label{section:gradient_analysis}
