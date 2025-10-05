@@ -1,24 +1,24 @@
-Remove Report Title at the Cover Page
+~~RRemove Report Title at the Cover Page~~
 
-Remove the weight observation and class imbalance distribution (move to appendix)
+~~Remove the weight observation and class imbalance distribution (move to appendix)~~
 
-Remove other learning curve (moving to appendix maybe)
+~~Remove other learning curve (moving to appendix maybe)~~
 
-Remove the predicted alignment (it does not make any sense)
+~~Remove the predicted alignment (it does not make any sense)~~
 
-Fix scale of alignment example (it started at -0.5 and then at end-0.5, which is weird)
+~~Fix scale of alignment example (it started at -0.5 and then at end-0.5, which is weird)~~
 
-Transpose the gradient matrix (it should have strong alignment at x-axis and the path move from bottom-left to top-right) so that it is intuitively meaningful
+~~Transpose the gradient matrix (it should have strong alignment at x-axis and the path move from bottom-left to top-right) so that it is intuitively meaningful~~
 
-parameter: origin:'lower'
+~~parameter: origin:'lower'~~
 
-Table 4.1 - fix caption
-fix epoch to convergence for all soft cases (they are currently shows total epoch trained)
+~~Table 4.1 - fix caption
+fix epoch to convergence for all soft cases (they are currently shows total epoch trained)~~
 
 Possible question - discussion: why all of them have the same F1 score?
 
-Chords in axis y: reduce the amount of chord labeled on graph for cleaning look
-Increase font of graphs
+~~Chords in axis y: reduce the amount of chord labeled on graph for cleaning look~~
+~~Increase font of graphs~~
 
 Explain how did we obtained the ground truth alignment for the gradient analysis graph.
 

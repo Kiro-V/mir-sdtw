@@ -54,7 +54,7 @@ class Trainer:
         self._train_losses, self._val_losses = [], []
 
 
-    def __save_e_matrix(self):
+    def __save_e_matrix(self, epoch):
         """
         Save E matrix plot for monitoring training progress
         Perform the validation step and plot the E matrix
@@ -96,11 +96,10 @@ class Trainer:
         plt.imshow(e_matrix_soft[0,:,:].T, cmap='gray_r', origin='lower', aspect='auto')
         plt.colorbar(label='Probability')
         plt.imshow(e_matrix_strong.T, cmap='Reds', origin='lower', alpha=0.25, aspect='auto')
-        plt.legend(['Ground Truth Alignment', 'Predicted Alignment'])
-        plt.ylabel('Soft Sequences', fontsize=18)
-        plt.xlabel('Strong Sequences', fontsize=18)
-        plt.title('E Matrix', fontsize=18)
-        plt.savefig(os.path.join(self.__save_e_matrix_params['save_path'], f"e_matrix_epoch_{len(self._train_losses)}.png") )
+        plt.ylabel('Soft Sequences', fontsize=20)
+        plt.xlabel('Strong Sequences', fontsize=20)
+        plt.title(f'E Matrix, Epoch: {epoch+1}', fontsize=20)
+        plt.savefig(os.path.join(self.__save_e_matrix_params['save_path'], f"e_matrix_epoch_{epoch}.png"))
         plt.close()
 
     def __train_step(self,x, y):
@@ -214,7 +213,7 @@ class Trainer:
             print(f'Epoch {e+1}/{self.__epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
             if self.__save_e_matrix_to and e % self.__save_e_matrix_params['every_n_epochs'] == 0:
-                self.__save_e_matrix()
+                self.__save_e_matrix(e)
             
             if best_val_loss is None or val_loss < best_val_loss:
                 best_val_loss = val_loss
