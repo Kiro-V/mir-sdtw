@@ -1,0 +1,496 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Setup title, etc in config.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{config}                     
+\documentclass[a4paper,11pt,\myPageLayout]{book}
+\usepackage[utf8]{inputenc}
+\usepackage{captionSmall}
+
+\input{config_packages_macros}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Start of document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\fancypagestyle{plain}{\pagestyle{mine}} % remove this if you don't want 
+                                         % headings on the first page of a chapter
+\frontmatter
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title Page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{titlepage}
+\cleardoublepage{}
+
+\pagenumbering{roman}
+\pagestyle{mine}
+\newpage
+
+\section*{Abstract}
+The evolution of Deep Neural Networks has shifted the paradigm of music information retrieval from heuristic and mathematical models to data-driven approaches, which rely on large amounts of labelled training data.
+However, it introduces challenges when training with weakly aligned datasets. In this project, we investigate the characteristics of differential dynamic time warping through soft dynamic time warping (SDTW) algorithm when training with weakly aligned data.
+The main objective is to integrate SDTW as a loss function in the training process of a chord recognition model.
+The dataset will have its chord label timestamps distorted or removed to simulate weakly or unaligned data.
+The SDTW loss function will then be used to train the model with the distorted dataset.
+Our results show that SDTW is able to achieve comparable performance to the baseline model trained on strongly aligned data with a slight decrease in F1-score.
+
+\mainmatter{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Table of Contents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setcounter{tocdepth}{1}
+\setcounter{page}{1}
+{\parskip=0mm \tableofcontents}
+% \thispagestyle{empty}
+
+\pagestyle{mine}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}
+\label{chapter:Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Amidst the rapid advancement of deep neural networks (DNNs),
+The field of music information retrieval (MIR) has witnessed a significant shift from traditional heuristic and mathematical models to data-driven approaches that heavily rely on large amounts of labelled training data.
+such as pitch estimation
+\cite{Kim2018_CREPEmodel_ISMIR}, audio embeddings \cite{Cramer2019_OpenL3_ISMIR},
+automatic music transcription \cite{Benetos2019_AutomaticMusicTranscription}.
+
+However, the reliance on large and accurate datasets poses many challenges,
+considering the time-consuming and labor-intensive nature of manual annotation, as well as the potential for human error and subjectivity. Thus, it is generally difficult to obtain strongly aligned annotations,
+where each frame of the audio signal is associated with a corresponding label. Instead,
+weakly aligned or unaligned annotations are more common, where only the presence or absence of
+certain labels is known, without precise temporal alignment. This eases the data acquisition process,
+but requires a more sophisticated loss function to train the model.
+One proposed solution is using connectionist temporal classification (CTC) loss \cite{Graves2006_ConnectionistTemporalClassification_ICML}.
+Another proposed approach is to use soft dynamic time warping (SDTW) \cite{Cuturi2018_SoftDTW_DifferentiableLossFunctionTimeSeries}, which is what we will explore in this project.
+
+Dynamic Time Warping (DTW) is a well-known algorithm for measuring similarity between two temporal sequences
+that may vary in speed or timing \cite{Mueller-07_DTW}.
+One limitation of DTW is its non-differentiability due to the hard minimum operator used in the alignment cost computation. Therefore, it cannot be used directly as a loss function in DNNs as it requires the computation of gradients during backpropagation \cite{Backpropagation, damadi2023backpropagationalgorithmmathstudent}.
+SDTW addresses this limitation by smoothing the minimum operator, making it differentiable at all points \cite{Cuturi2018_SoftDTW_DifferentiableLossFunctionTimeSeries}.
+This opens up the possibility of using SDTW as a loss function in DNNs, allowing the model to learn from weakly aligned or unaligned data.
+
+In this project, we investigate the characteristics of SDTW and implement it as a
+loss function in the training process of DNNs. We choose the task of chord recognition as a case study \cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+Furthermore, we compare the results of the model trained with SDTW loss against a baseline model trained with binary cross-entropy (BCE) loss on strongly aligned data, and analyze the gradient computation during training. The structure of the report is as follows:
+Chapter \ref{chapter:sdtw} presents the formulation of SDTW. Then we describe the experimental setup in Chapter \ref{chapter:experimental_setup}, followed by the evaluation of the results in Chapter \ref{chapter:evaluation}. Finally, we conclude the report in Chapter \ref{chapter:conclusions}. Starting from the next chapter, we will refer weakly aligned data as soft targets, and strongly aligned data as strong targets.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Soft Dynamic Time Warping Algorithm}
+\label{chapter:sdtw}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this chapter, we present the mathematical formulation of the SDTW algorithm.
+We closely follow the paper by Zeitler et al. \cite{Zeitler2024_SoftDynamicTimeWarpingWithVariableStepWeights_ICASSP}
+for consistency and clarity in notation and terminology.
+
+\section{Definition and Notation}
+Let $\mathbf{X} = (\mathbf{x}_1, \ldots, \mathbf{x}_{M})$ and $\mathbf{Y} = (\mathbf{y}_1, \ldots, \mathbf{y}_{N})$,
+where $\mathbf{X}$ and $\mathbf{Y}$ representing the predicted and soft target sequences, respectively.
+Furthermore, we assume $M > N$.
+The objective of SDTW is to calculate the alignment cost between $\mathbf{X}$ and $\mathbf{Y}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Forward Pass}
+\label{section:forward_pass}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In the forward pass, we compute the accumulated cost matrix $\mathbf{D} \in \mathbb{R}^{M \times N}$, where each element $D(i,j)$ represents the minimum cost of aligning the first $i$ elements of $\mathbf{X}$ with the first $j$ elements of $\mathbf{Y}$.
+The accumulated cost is computed using the local cost matrix $\mathbf{C}  \in \mathbb{R}^{M \times N}$, where $\mathbf{C}(i,j) = c(\mathbf{x}_i, \mathbf{y}_j)$, which measures the dissimilarity between the elements $\mathbf{x}_i$ and $\mathbf{y}_j$. A common choice for the local cost function is the squared Euclidean distance:
+\begin{equation}
+    \mathbf{C}(i,j) = \| \mathbf{x}_i - \mathbf{y}_j \|^2_2.
+\end{equation}
+Instead of using the hard minimum operator as in traditional DTW, SDTW employs a differentiable approximation, defined as:
+\begin{equation}
+    \text{min}^\gamma (\mathcal{S})= -\gamma \log \sum_{s \in \mathcal{S}} \left( e^{-s/\gamma} \right),
+\end{equation}
+where $\gamma > 0$ is a smoothing parameter that controls the softness of the minimum operation, and $\mathcal{S}$ is the set of values over which the soft minimum is computed. As $\gamma$ approaches 0, the soft minimum converges to the hard minimum operator.
+Combining with the step constraint of DTW, we only consider three possible predecessor cells for each cell $(i,j)$, which are $(i-1,j)$, $(i,j-1)$, and $(i-1,j-1)$.
+Thus the accumulated cost matrix $\mathbf{D}$ is computed recursively as follows:
+\begin{equation}
+    \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right).
+\end{equation}
+The final alignment cost is given by 
+\begin{equation}
+    \text{SDTW}^\gamma_\mathbf{C} = \mathbf{D}(M, N).
+\end{equation}
+The forward pass is summarized in Algorithm \ref{algorithm:forward_pass} in the appendix.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Backward Pass}
+\label{section:backward_pass}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+To train the model, we need to compute the gradients of the SDTW loss with respect to the model parameters \cite{Zeitler2024_SoftDynamicTimeWarpingWithVariableStepWeights_ICASSP}. The backward pass computes the gradient $\mathbf{H} \in \mathbb{R}^{M \times N}$ of the SDTW cost with respect to the cost matrix $\mathbf{C}$.
+An efficient way to compute the gradient is to use a dynamic programming approach similar to the forward pass. The gradient is computed recursively as follows:
+\begin{equation}
+    \label{eq:backward_pass}
+    \mathbf{H}(i,j) = \frac{\partial \mathbf{D}(M,N)}{\partial \mathbf{D}(i,j)} \frac {\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}
+\end{equation}
+During the backward pass, we consider the predecessor cells of $(i,j)$ in the forward pass. This expands Equation \ref{eq:backward_pass} to:
+\begin{equation}
+    \mathbf{H}(i,j) = \frac{\partial \mathbf{D}(M,N)}{\partial \mathbf{D}(i+1,j)} \frac{\partial \mathbf{D}(i+1,j)}{\partial \mathbf{D}(i,j)}
+    + \frac{\partial \mathbf{D}(M,N)}{\partial \mathbf{D}(i,j+1)} \frac{\partial \mathbf{D}(i,j+1)}{\partial \mathbf{D}(i,j)}
+    + \frac{\partial \mathbf{D}(M,N)}{\partial \mathbf{D}(i+1,j+1)} \frac{\partial \mathbf{D}(i+1,j+1)}{\partial \mathbf{D}(i,j)}.
+\end{equation}
+
+For simplicity, we denote $\mathbf{E}(i,j) = \frac{\partial \mathbf{D}(M,N)}{\partial \mathbf{D}(i,j)}$
+and $\mathbf{F}^{p, q}(i,j) = \frac{\partial \mathbf{D}(i+p,j+q)}{\partial \mathbf{D}(i,j)}$, where $p, q \in \{0, 1\}$.
+
+Using the derivative of the soft minimum operator w.r.t. to its input $s \in \mathcal S$
+\begin{equation}
+    \frac{\partial \text{min}^\gamma(\mathcal{S})}{\partial s} = \frac{e^{-s/\gamma}}{\sum_{s' \in \mathcal S} e^{-s'/\gamma}},
+\end{equation}
+we can compute $\mathbf{F}^{1,0}(i,j)$ without loss of generality as:
+\begin{equation}
+    \mathbf{F}^{1,0}(i,j) = \frac{\partial \text{min}^\gamma(\mathbf{D}(i+1,j))}{\partial \mathbf{D}(i,j)} \\
+    = \frac{e^{-(\mathbf{C}(i+1,j) - \mathbf{D}(i,j))/\gamma}}{e^{-\mathbf{D}(i,j)/\gamma}}.
+\end{equation}
+Similarly, we can compute $\mathbf{F}^{0,1}(i,j)$ and $\mathbf{F}^{1,1}(i,j)$.
+Then we can reformulate $\mathbf{E}$ as:
+\begin{equation}
+    \mathbf{E}(i,j) = \mathbf{E}(i+1,j) \mathbf{F}^{1,0}(i,j) + \mathbf{E}(i,j+1) \mathbf{F}^{0,1}(i,j) + \mathbf{E}(i+1,j+1) \mathbf{F}^{1,1}(i,j).
+\end{equation}
+Denote $\mathbf{G}(i,j) = \frac{\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}$, we have the final formulation of $\mathbf{H}$ as:
+\begin{equation}
+    \mathbf{H}(i,j) = \mathbf{E}(i,j) \mathbf{G}(i,j).
+\end{equation}
+An overview of the backward pass is provided in Algorithm \ref{algorithm:backward_pass} in the appendix. Note that the recursive computation of both forward and backward pass has a time complexity of $\mathcal{O}(MN)$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Experimental Setup}
+\label{chapter:experimental_setup}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this section, we present the objectives of our experiment, the dataset used for training, alongside the network architecture and the training process.
+
+\section{Dataset}
+\label{section:dataset}
+For the experiment, we use the Beatles dataset retrieved from Isophonics \cite{HarteSAG05_ChordRecognition_ISMIR}, consisting of four audio recordings with respective annotations. 
+Since the original annotations have more than 24 chord types, which would make the network too complex and beyond the scope of this project, we therefore consider the simplified version of such annotations, which reduces the number of chord types to only 24 (12 root notes with their respective major or minor variant)\cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+We split the dataset into training, validation, and test sets. For the test set, a short segment of ``Let It Be'' is used,
+while the rest of the dataset is split into a 3:1 ratio for training and validation.
+
+We chose a sequence length of 150 samples for training and validating the model, creating 43 and 12 segments for training and validation, respectively.
+In case of soft alignment, we remove the adjacent repetitions in the sequence as shown in Figure \ref{figure:soft_alignment}.
+\begin{figure}[t]
+    \centering
+    \includegraphics[scale=0.5]{figures/data_strong.png}
+    \\
+    \vspace{0.5cm}
+    \includegraphics[scale=0.5]{figures/data_soft.png}
+    \caption{Example of strong and soft target sequences. The strong target sequence has a length of 150, while the soft target sequence has a length of 6 after removing adjacent repetitions.}
+    \label{figure:soft_alignment}
+\end{figure}
+
+However, this method introduces a problem where batching target sequences of different lengths is not possible. To address this issue, after reduction, we pad the sequences with repeating elements until they reach a desired length, or ``soft length''.
+We propose two padding strategies: uniform and last element repetition, as illustrated in Figure \ref{figure:padding_strategies}. We define uniform padding as repeating all elements in the sequence, i.e ``stretching'' the sequence to the desired length, whereas the last element only repeats the last element until the desired length is reached. Due to this, the soft target may have a length that is shorter, equal to, or longer than the original strong target.
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_uniform.png}
+        \caption{Uniform padding with soft length of 16.}
+        \label{figure:uniform_16}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft16_last.png}
+        \caption{Last element repetition with soft length of 16.}
+        \label{figure:last_16}
+    \end{subfigure}
+    \\
+    \vspace{0.5cm}
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_uniform.png}
+        \caption{Uniform padding with soft length of 75.}
+        \label{figure:uniform_75}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/data_soft75_last.png}
+        \caption{Last element repetition with soft length of 75.}
+        \label{figure:last_75}
+    \end{subfigure}
+    \caption{Example of different padding strategies with different soft lengths. The original strong target sequence has a length of 150, while the soft target sequence has a length of 5 after removing adjacent repetitions. The padded sequences have lengths of 16 and 75, respectively.}
+    \label{figure:padding_strategies}
+\end{figure}
+After some experiments, we find that a soft length of 16 covers all of the possible reduced sequences while keeping the reduction ratio high. We also choose a soft length of 75 to evaluate the effect of a different reduction ratio on the performance of the model. Both of the chosen lengths are strictly less than the original length of 150 to be consistent with our assumption that $M > N$ in Chapter \ref{chapter:sdtw}.
+
+
+\section{Model Architecture}
+\label{section:model_architecture}
+Given that the aim of this experiment is to evaluate the performance of the proposed SDTW loss function, the network architecture plays a minor role and is kept simple.
+Therefore, we used a simple chord recognition network (dChord) \cite{PCPT} that is based on the template-based chord recognition algorithm \cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+This network consists of a single layer that acts as the chord template to predict a 24-dimensional activation vector, corresponding to 24 chord types.
+The network has a total of 25 trainable parameters.
+Table \ref{table:arch} illustrates the components of the architecture with their respective input and output dimensions.
+
+\begin{table}[tb]
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Layer & Input Dimension & Output Dimension & Parameters \\
+        \hline
+        Log-compression & (12, 150) & (12, 150) & 1 \\
+        Normalization & (12, 150) & (12, 150) & 0 \\
+        dChord & (12, 150) & (24, 150) & 24 \\
+        softmax & (24, 150) & (24, 150) & 0 \\
+        \hline
+    \end{tabular}
+        \caption{Architecture of the chord recognition network. Input sequence length is 150 samples.}
+        \label{table:arch}
+    \end{center}
+\end{table}
+\newpage
+During the training process, we use Adam Optimizer \cite{Kingma2017_AdamMethodStochasticOptimization} with a a learning rate $\alpha = 0.1$ with $\beta_1 = 0.9$, $\beta_2 = 0.999$ and $\epsilon = 10^{-8}$. Since the dataset is small, of only 43 training segments, we use a single batch of 43 targets to train the model over 300 epochs for both targets. We also enable weight sharing, where the weights of the chords in the same chord class (major or minor) are shared, so that the model can compensate for the chords that are underrepresented in either chord class. We conduct the training process on Dell Inc. XPS 15 9570 with Intel Core i7-8750G, 16 GB RAM, with Ubuntu 24.04.2 LTS Operating System.
+
+\chapter{Evaluation}
+\label{chapter:evaluation}
+In this section, we evaluate the performance of the aforementioned SDTW loss function against the baseline model trained with BCE loss for the task of chord recognition. We train each model five times to observe any randomness present in the training process, and the model consistently achieves identical performance metrics across multiple runs.
+We train the models on a total of five cases, including one case of strong targets and four soft cases. The soft cases cover all combinations of soft lengths, which are 16 and 75, and two different padding strategies (uniform and last element repetition).
+
+\section{Training Curve}
+\label{section:training_curve}
+Figure \ref{figure:train_curves} shows the training and validation loss curves of the models trained on strong and soft targets. Overall, we observe that the training curves of both models exhibit a similar trend, with the training loss decreasing over time. However, there are some notable differences between the two curves.
+The loss value for the model trained on the soft targets is much larger than that of the model trained on the strong targets, which ranges from 130 to 70, compared to 0.16 to 0.11 for the model trained on the strong targets. On strong targets, the validation loss converges around epoch 230.
+On soft targets, the model improves until epoch 130, then the validation loss starts to increase while the training loss continues to decrease. In general, the training curve show that using SDTW loss allows the model to learn from the soft targets, with a training curve similar to that of the model trained with BCE loss.
+
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_strong/learncurve-strong.png}
+        \caption{Training and validation loss curves of the model trained on strong targets with BCE loss.}
+        \label{figure:strong_train_curves}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[scale=0.5]{figures/results_soft/learncurve-gam03.png}
+        \caption{Training and validation loss curves of the model trained on soft targets with SDTW loss.}
+        \label{figure:soft_train_curves}
+    \end{subfigure}
+    \caption{Training and validation loss curves of the models trained on strong and soft targets.}
+    \label{figure:train_curves}
+\end{figure}
+
+
+\section{Training results}
+\label{section:baseline}
+
+\begin{table}[t]
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|}
+            \hline
+            Target/ Original Length & Loss Function & Test F1-score (\%)    \\
+                                    & (Pad Strategy) &                      \\
+            \hline
+            150/150 & BCE & 77.5 \\
+            \hline
+            16/150 & SDTW (uniform) & 76.1 \\
+            75/150 & SDTW (uniform) & 76.1 \\
+            \hline
+            16/150 & SDTW (last) & 76.1 \\
+            75/150 & SDTW (last) & 68.1 \\
+            \hline
+        \end{tabular}
+    \end{center}
+    \caption{Results of the models trained on strong and soft targets.}
+    \label{table:results}
+\end{table}
+Table \ref{table:results} summarizes the results of the baseline model trained on strong targets with binary cross-entropy loss and the model trained on soft targets with SDTW loss. Here, we choose two different soft lengths, 16 and 75, to evaluate the effect of the reduction ratio on the performance. We also compare two different padding strategies, uniform and last element repetition, making a total of four cases for the soft targets. The performance is evaluated using the F1-score metric on the test set, which is used in template-based chord recognition task \cite{Mueller15_FundamentalsMusicProcessig_SPRINGER}.
+
+Overall, we see that SDTW loss is able to achieve comparable performance to the baseline model trained on strong targets, with a slight decrease in F1-score of 1.4\%.
+This shows that SDTW can effectively learn from the soft targets that contain less or noisy temporal information,
+making it more robust to variations in the input sequence.
+Observing the results of different padding strategies, we find that last element repetition leads to identical performance as
+uniform padding for short soft lengths, though it eventually degrades as the soft length increases (up to 8\% on soft length 75). This is likely due to the repetition,
+which introduces a bias towards the last element, as demonstrated in Figure \ref{figure:padding_strategies}. Nonetheless, the result shows that SDTW is rather flexible, being able to compensate for small mistakes in annotations. Additionally, the weight distribution of the trained model is provided in the Appendix \ref{chapter:mode_template_weight}.
+
+\section{Gradient Analysis}
+\label{section:gradient_analysis}
+
+Inspecting the SDTW gradient during training, with different soft lengths and uniform padding, we can observe the change in probability distribution of the alignment path.
+Figure \ref{figure:gradient_over_epochs_uniform} and \ref{figure:gradient_over_epochs_repetition} demonstrate the computed gradient at epoch 1 and epoch 161 of the training process with different soft lengths and padding strategies. We chose epoch 161 as this is when the validation loss starts to increase. The regions, where the chord is the same on both sequences, are highlighted in light red rectangles. Here, the ground truth alignment is the middle diagonal path that connects the top-left and bottom-right corners of the matrix.
+
+We notice that at first the gradient shows a diagonal prior to the alignment path (at epoch 1), indicating that the model is initially uncertain about the alignment. However, as training progresses, the gradient shifts towards the ground truth, albeit not perfectly contained within the ground truth region (at epoch 161).
+This indicates that the model is capable of learning the alignment in case of soft targets, despite the lack of precise temporal information.
+Moreover, we inspect the gradient with more extreme alignment paths, such as with last element repetition, shown in Figure \ref{figure:gradient_over_epochs_repetition}.
+In such cases, the gradient behaviour becomes more pronounced. It at first creates two distinct paths with similar probabilities,
+as it quickly converges to the ground truth alignment from the initial diagonal prior. Although these cases may cause a large drop in model performance, as shown in section \ref{section:baseline}, we can see the flexibility of SDTW loss, being able to adapt to different alignment paths.
+
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_16_uniform_epoch_1.png}
+        \caption{Epoch 1}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_16_uniform_epoch_161.png}
+        \caption{Epoch 161}
+    \end{subfigure}
+    \caption{Gradient over epochs with soft length 16 and uniform padding.}
+    \label{figure:gradient_over_epochs_uniform}
+\end{figure}
+
+\begin{figure}[tb]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_16_last_epoch_1.png}
+        \caption{Epoch 1}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_16_last_epoch_161.png}
+        \caption{Epoch 161}
+    \end{subfigure}
+    \caption{Gradient over epochs with soft length 16 and last element repetition padding.}
+    \label{figure:gradient_over_epochs_repetition}
+\end{figure}
+Despite following the ground truth, the gradient distribution appears to be blurry and not sharply concentrated along
+the alignment path. This is likely due to the choice of soft temperature $\gamma$, which controls the softness of
+the minimum operator in SDTW. In appendix \ref{chapter:gamma_effect}, we provide an analysis of the effect of $\gamma$ on the gradient distribution.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Conclusions}
+\label{chapter:conclusions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In this report, we have presented a comprehensive study on the use of the SDTW loss for chord recognition in music information retrieval.
+
+Despite the simplicity of the network architecture, the results indicate that the model is capable of effectively predicting unseen data, even when the training data contains missing or imprecise temporal information, with only a slight degradation in performance.
+Our experiments provide a method to circumvent the batching limitations when working with variable-length sequences, and we have demonstrated that the model trained with soft targets is capable of generalizing to unseen data, as evidenced by the improved performance metrics on the validation set. The use of soft targets and SDTW loss allows the model to learn from a richer set of annotations, where imperfections regarding the timing and duration of musical events may occurred.
+
+Furthermore, our analysis of the model's behavior reveals interesting insights into the learning process. The gradient during training proves that SDTW can effectively find the time warping alignment between the input and target sequences; therefore, it mitigates the impact of misalignments and improves the overall robustness of the model.
+
+Several limitations of our approach should be acknowledged. First, the small and imbalanced data set used for the experiment may not fully capture the diversity of musical styles and chord progressions, which causes an bias towards major chords. Second is the method of providing soft targets. The current approach starts from strong targets and reduces the repetitions in order to emulate misalignments, but it may not fully capture the nuances of real-world annotations. Finally, the proposed method to solve variable-length caused by repetition reduction introduces additional complexity during the data preprocessing step, and the choice of padding strategy can significantly impact the model's performance. Despite these limitations, the proposed padding method shows that the soft targets can be of arbitrary length, instead of strictly shorter than the original strong targets like our assumption in Chapter \ref{chapter:sdtw}.
+
+In conclusion, integrating SDTW into a deep neural network model extends the model's capability to handle annotation misalignment, which in turn improves its stability and robustness.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Algorithm Pseudocode}
+\label{chapter:algorithm_pseudocode}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Chapter \ref{chapter:sdtw} provides a detailed mathematical formulation of the SDTW algorithm. In this appendix, we present an overview of pseudocode for the forward and backward passes, following the notation and terminology used by Zeitler et al. \cite{Zeitler2024_SoftDynamicTimeWarpingWithVariableStepWeights_ICASSP}.
+
+
+\section{Forward Pass}
+Algorithm \ref{algorithm:forward_pass} shows the overview of the forward pass of SDTW.
+A complete row and column of a matrix $\mathbf{D}$ is denoted as $\mathbf{D}(i,:)$ and $\mathbf{D}(:,j)$, respectively.
+During initialization, we insert an additional row and column at the beginning of the matrix $\mathbf{D}$ and set $\mathbf{D}(0,0) = 0$.
+
+
+\begin{algorithm}[t]
+    \caption{Forward Pass of SDTW}
+    \label{algorithm:forward_pass}
+    \begin{algorithmic}
+    \Require $\mathbf{X}$, $\mathbf{Y}$, $\gamma > 0$
+    \Ensure Accumulated cost matrix $\mathbf{D} \in \mathbb{R}^{M \times N}$
+    \State $\mathbf{D}(0,0) = 0$
+    \State $\mathbf{D}(i,:) = \mathbf{D}(:,j) = \infty$
+    \For{$i = 1$ to $M$}
+        \For{$j = 1$ to $N$}
+            \State Compute local cost: $\mathbf{C}(i,j) = \| \mathbf{x}_i - \mathbf{y}_j \|^2_2$
+            \State Update accumulated cost:
+            \[ \mathbf{D}(i,j) = \mathbf{C}(i,j) + \text{min}^\gamma \left( \mathbf{D}(i-1,j), \mathbf{D}(i,j-1), \mathbf{D}(i-1,j-1) \right)\]
+        \EndFor
+    \EndFor
+
+    \Return $\mathbf{D}$
+    \end{algorithmic}
+\end{algorithm}
+
+\section{Backward Pass}
+Algorithm \ref{algorithm:backward_pass} shows the overview of the backward pass of SDTW.
+Similar to the forward pass, we append an additional row and column at the end of the matrices. The additional row and column of are corespondingly intialzied with $0$ and $-\infty$, except for $ \mathbf{C}(M+1,N+1) = 0$, $\mathbf{D}(M+1,N+1) = \mathbf{D}(M,N)$ and $\mathbf{E}(M+1,N+1) = 1$.
+\begin{algorithm}[t]
+    \caption{Backward Pass of SDTW}
+    \label{algorithm:backward_pass}
+    \begin{algorithmic}
+        \Require $\mathbf{C}, \mathbf{D}$, $\gamma > 0$
+        \Ensure Gradient matrix $\mathbf{H} \in \mathbb{R}^{M\times N}$
+        \State $\mathbf{C}(M+1,:) = \mathbf{C}(:,N+1) = 0$
+        \State $\mathbf{D}(M+1,:) = \mathbf{D}(:,N+1) = -\infty$
+        \State $\mathbf{D}(M+1,N+1) = D(M,N)$
+        \State $\mathbf{E}(M+1,:) = \mathbf{E}(:,N+1) = 0$
+        \State $\mathbf{E}(M+1,N+1) = 1$
+        \For {i = M down to 1}
+            \For {j = N down to 1}
+                \State Compute $\mathbf{F}^{1,0}(i,j), \mathbf{F}^{0,1}(i,j), \mathbf{F}^{1,1}(i,j)$
+                \State Update $\mathbf{E}(i,j) = \mathbf{E}(i+1,j) \mathbf{F}^{1,0}(i,j) + \mathbf{E}(i,j+1) \mathbf{F}^{0,1}(i,j) + \mathbf{E}(i+1,j+1) \mathbf{F}^{1,1}(i,j)$
+                \State Compute $\mathbf{G}(i,j) = \frac{\partial \mathbf{D}(i,j)}{\partial \mathbf{C}(i,j)}$
+                \State Update $\mathbf{H}(i,j) = \mathbf{E}(i,j) \mathbf{G}(i,j)$
+            \EndFor 
+        \EndFor
+
+        \Return $\mathbf{H}$
+    \end{algorithmic}
+\end{algorithm}
+
+\chapter{Model Template Weight}
+\label{chapter:mode_template_weight}
+Figure \ref{figure:weight_histogram} shows the weight distribution of the final layer over two chord classes. We enable weight sharing across twelve chromas to counteract the small dataset size,
+Hence, the weight distribution appears similar to a transposition of a single chord.
+The final weight of the major chord class is more distinguished and vivid than that of the minor chord class,
+which is fainter, indicating less weight. This behaviour is also reflected in the original dChord model \cite{PCPT},
+where, due to the imbalance of the major and minor chords in the dataset, the model tends to favor major chords over minor chords.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.5]{figures/results_soft/weight-gam03.png}
+    \caption{Weight distribution of the final layer over two chord classes. Higher values indicate larger weight.}
+    \label{figure:weight_histogram}
+\end{figure}
+
+\chapter {Soft Temperature's Effect}
+\label{chapter:gamma_effect}
+In Section \ref{section:gradient_analysis}, we observe that the gradient distribution along the alignment path appears to be blurry and not exclusively concentrated along the alignment path for $\gamma = 0.3$. Therefore, we investigate the effect of different soft temperatures $\gamma$ on the gradient distribution during training.
+We choose two extreme values of $\gamma$, which are 0.001 and 10, to observe the difference in gradient behaviour. For this experiment, we use the configuration of soft length 16 with uniform padding from Section \ref{section:baseline}.
+
+Figure \ref{figure:different_gamma} shows the gradient behaviour with different soft temperatures $\gamma$ of 0.001 and 10. At epoch 161, we see that higher $\gamma$ leads to a more diffuse gradient distribution along the alignment path,
+while lower $\gamma$ results in a sharper gradient distribution at the first epoch. This behaviour is consistent with the findings in \cite{Cuturi2018_SoftDTW_DifferentiableLossFunctionTimeSeries}.
+
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_gamma_00001.png}
+        \caption{$\gamma = 0.001$, Epoch 1}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[scale=0.3]{figures/alignment/e_matrix_gamma_10.png}
+        \caption{$\gamma = 10$, Epoch 161}
+    \end{subfigure}
+    \caption{Gradient with different soft temperature $\gamma$. Soft length is 16 with uniform padding.}
+    \label{figure:different_gamma}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage{}
+{
+\small
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{siam}
+\bibliography{bibliography}
+}
+\cleardoublepage{}
+
+
+\end{document}
